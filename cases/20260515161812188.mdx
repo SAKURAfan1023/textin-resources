@@ -1,32 +1,32 @@
 ---
-title: "A shared document foundation for global manufacturing"
-description: "A heavy equipment group connects technical knowledge, overseas services, contract review, and audit workflows with xParse."
+title: "How a Construction Machinery Group Built a Shared Document Layer for AI with TextIn xParse"
+description: "From engineering drawings and overseas repair manuals to contracts and audit reports, TextIn xParse helps a leading construction machinery group turn complex business documents into structured data for applications across its operations."
 keywords:
-  - xParse
-  - manufacturing
-  - technical document parsing
-  - knowledge management
-  - audit automation
+  - "xParse"
+  - "manufacturing"
+  - "technical document parsing"
+  - "knowledge management"
+  - "audit automation"
 source: "https://www.textin.com/cases/20260515161812188"
-mode: center
+mode: "center"
 hideFooterPagination: true
 timestamp: false
-sidebarTitle: Heavy equipment manufacturer
-og:image: https://intsig-2a639cbc.mintlify.site/images/cases/20260515161812188/cover.webp
+sidebarTitle: "Heavy equipment manufacturer"
+og:image: "https://intsig-2a639cbc.mintlify.site/images/cases/20260515161812188/cover.webp"
 listing:
-  date: 2026-05-15
-  industry: Manufacturing
-  product: xParse
-  cover: /images/cases/20260515161812188/cover.webp
+  date: "2026-05-15"
+  industry: "Manufacturing"
+  product: "xParse"
+  cover: "/images/cases/20260515161812188/cover.webp"
   scenarios:
-    - Enterprise knowledge bases & RAG
-    - Enterprise AI platforms
-  customer: Heavy equipment manufacturer
+    - "Enterprise knowledge bases & RAG"
+    - "Enterprise AI platforms"
+  customer: "Heavy equipment manufacturer"
   metric:
-    value: 70%
-    label: improvement in management report analysis
-  order: 60
-  homeOrder: false
+    value: "70%"
+    label: "improvement in management report analysis"
+  order: 30
+  homeOrder: 30
 ---
 
 {/* content:metadata:start */}
@@ -37,75 +37,65 @@ Manufacturing · xParse · May 15, 2026
 
 ![Heavy equipment manufacturer — original case cover](/images/cases/20260515161812188/cover.webp)
 
-## The customer
+The group is a major construction machinery manufacturer with extensive international operations. As it advances its digital transformation, the company is bringing AI and data technologies into research, manufacturing, commercial operations, and customer services.
 
-A major construction machinery group is bringing AI and data capabilities into research, manufacturing, commercial operations, and customer services. Its international operations depend on large collections of technical and business documents. The company is not named in the published case.
+But as these initiatives expanded, different departments encountered a common obstacle: critical business information was locked inside documents that conventional tools struggled to process.
 
-## The challenge: many workflows, one unstructured data barrier
+## The same document problem showed up across the business
 
-Different teams were encountering related document problems:
+In engineering, drawings contain borders, lines, and other graphical elements that conventional recognition tools can mistake for tables. This can affect the accuracy of extracted information used in downstream cost analysis.
 
-- **Engineering:** drawings contain borders and lines that conventional recognition tools can confuse with tables, affecting downstream cost analysis.
-- **International finance and service:** overseas invoices vary widely, while repair manuals contain dense tables, images, and multi-level sections that must remain searchable and traceable.
-- **Contract review:** staff check seals and signatures across multi-page, nonstandard contracts, including text obscured by stamps.
-- **Audit:** business units submit management reports in different formats, making manual analysis slow and important risks easy to overlook.
-- **Knowledge management:** formulas, multiple columns, and complex layouts were being lost or scrambled before documents reached the knowledge base.
+Overseas finance and service teams face a different set of documents. International invoices vary widely in format, while repair manuals contain dense tables, images, and multi-level sections. The information needs to remain searchable and traceable so that employees can find the right details when processing invoices or supporting equipment maintenance.
+
+Contract review brings its own difficulties. Legal and commercial teams need to check seals and signatures across multi-page, non-standard overseas contracts, including text partially obscured by stamps.
+
+Internal audit teams, meanwhile, work with management reports submitted by different business units in inconsistent formats. Manually interpreting these documents takes time and can make important risks harder to identify.
+
+The same issue also affects knowledge management. Technical documents containing formulas, multiple columns, and complex layouts often lose their original structure during conventional parsing, making it difficult to build reliable enterprise knowledge bases.
 
 ![An engineering drawing from the original case](/images/cases/20260515161812188/figure-1.webp)
 
-## The solution: xParse as a platform service
+## One parsing engine for very different documents
 
-The group selected TextIn xParse as a common parsing engine for unstructured documents across its business systems.
+The group brought in TextIn xParse as a shared parsing engine for unstructured documents across its business systems. Instead of building separate document processing pipelines for individual departments, the company could use a common parsing capability to support different workflows.
 
-### Preserve structure and source elements
-
-xParse parses engineering drawings, invoices, and technical manuals while retaining headings, paragraphs, and document hierarchy. It labels text, images, and other elements so downstream applications can select content and prepare knowledge chunks.
+xParse processes engineering drawings, overseas invoices, and technical manuals while preserving headings, paragraphs, and document hierarchy. It also identifies and labels key elements such as text and images, allowing downstream applications to select relevant content and create structured knowledge chunks.
 
 ![The engineering drawing and its structured parsing output](/images/cases/20260515161812188/figure-2.webp)
 
-### Reconstruct dense tables across pages
+Repair manuals presented a more specific challenge. Their tables often extend across multiple pages, and extracting individual values is not enough if the relationships between rows, columns, and headers are lost.
 
-Repair documentation often contains long tables spanning several pages. The implementation preserves row and column relationships and associates cells with the correct headers. Service applications use that structured data to retrieve fault codes and repair instructions.
+xParse reconstructs these table structures across page boundaries, keeping cell values associated with the correct headers. Service applications can then use the structured output to retrieve equipment fault codes and relevant repair instructions.
 
 ![A dense multi-page technical table and the original extraction interface](/images/cases/20260515161812188/figure-3.webp)
 
-### Support contract checks and existing AI applications
+For contract review, xParse provides seal detection and recognition of text obscured by stamps. It can identify seals across multi-page documents and extract underlying text, helping legal and commercial teams examine important contractual information more thoroughly.
 
-The deployment includes seal detection and recognition of text beneath stamps to assist contract review. Business applications continue to own review logic and decisions.
+The same parsing service also connects with the group's existing business systems and workflow platforms through standard APIs and private deployment, including Dify. Its structured outputs provide the foundation for downstream large language model (LLM) information extraction, retrieval-augmented generation (RAG) knowledge bases, and internal AI assistants. The business applications continue to own their respective review logic and decisions.
 
-Standard APIs and private deployment connect the parsing service to departmental systems and workflow platforms such as Dify. Structured outputs supply downstream field extraction, retrieval-augmented generation, and internal AI assistants.
+## Where the work started to move faster
 
-## Reported results
+Once structured document data became available to downstream applications, the impact extended beyond document recognition.
 
-### International procurement and finance
+In overseas procurement and finance, invoice approval time fell from two minutes to one minute per invoice, while the reported error rate dropped from 1.2% to 0.2%. Based on an annual volume of 40,000 invoices, the group estimated that the improvement could save approximately 80 person-days per year. It also projected an annual reduction of approximately RMB 600,000 in risk costs associated with duplicate reimbursements.
 
-Invoice approval time fell from two minutes to one minute. The reported error rate decreased from 1.2% to 0.2%.
+For overseas maintenance teams, system retrieval time fell from 13 seconds to five seconds, a reduction of more than 60%. The broader process of locating equipment fault codes and repair instructions also moved from hours to minutes, helping engineers access relevant technical information more quickly.
 
-At an annual volume of 40,000 invoices, the group projected savings of approximately 80 person-days and a CNY 600,000 annual reduction in risk costs associated with duplicate reimbursement. These are projections in the source, rather than realized savings verified by this article.
+The group's global marketing platform uses structured document information to support frontline sales and cross-department collaboration.
 
-### Overseas maintenance
+- **70% improvement** in frontline information retrieval efficiency
+- **50% improvement** in cross-department collaboration efficiency
+- **60% improvement** in proposal preparation efficiency
+- **More than 40%** share of high-quality content generated with AI
+- **43% improvement** in per-person productivity
 
-System retrieval time fell from 13 seconds to five seconds, a reduction of more than 60%. The wider task of finding fault codes and repair information moved from hours to minutes in the reported service workflow.
+The implementation also helped teams resolve customer questions more quickly and improve customer satisfaction.
 
-### Sales and marketing support
+Internal audit saw a similar change. In the group's audit and early-warning center, management report analysis efficiency improved by 70%. The average time required for an audit task fell from four to five hours to less than 30 minutes, while the identification rate for key risk points reached 98%.
 
-| Measure | Published result |
-| --- | --- |
-| Frontline information retrieval efficiency | Improved by 70% |
-| Cross-department collaboration efficiency | Improved by 50% |
-| Proposal preparation efficiency | Improved by 60% |
-| Share of high-quality content generated with AI | More than 40% |
-| Per-person productivity | Improved by 43% |
+Across these workflows, xParse has become more than a document recognition tool. It provides a shared data layer that allows different departments to reuse the same parsing capabilities and connect complex documents with the systems and AI applications that depend on them.
 
-The source also reports faster resolution of customer questions and improved satisfaction in these workflows.
-
-### Internal audit
-
-Management report analysis efficiency improved by 70%. Average audit task duration decreased from four to five hours to less than 30 minutes, while the reported identification rate for key risks reached 98%.
-
-The common parsing layer lets the group apply document capabilities across departments without rebuilding the same input pipeline for each new AI workflow.
-
-*Results are reported in the original customer case and reflect that implementation at publication.*
+For the group, this creates a more scalable foundation for enterprise AI adoption, overseas operations, knowledge management, and risk control.
 
 ## Keep exploring
 
@@ -117,5 +107,7 @@ The common parsing layer lets the group apply document capabilities across depar
 {/* content:footer:start */}
 [Back to Case Studies](/cases/list)
 
-<Card title="Put document AI to work." href="https://www.textin.ai/contact" cta="Talk to our team" />
+<Card title="Put document AI to work." href="https://www.textin.ai/contact" cta="Talk to our team">
+</Card>
+
 {/* content:footer:end */}
