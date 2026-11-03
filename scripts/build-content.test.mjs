@@ -71,6 +71,31 @@ test('editing the native title updates both lists without replacing authored con
   assert.match(await read(directory, 'news/new-article.mdx'), /Keep this body unchanged\./);
 });
 
+test('uploaded image formats and filenames work without renaming and missing leading slashes are saved automatically', async t => {
+  const { directory, catalog, save, article } = await fixture(t);
+  const logo = 'images/客户 Logo.PNG';
+  await writeFile(path.join(directory, logo), 'uploaded logo');
+  await writeFile(path.join(directory, 'cases/customer.mdx'), article);
+  catalog.cases.push({ page: 'cases/customer', date: '2026-10-23', industry: 'Manufacturing', scenarios: ['Document structuring'], product: 'xParse', cover: '/images/cover.webp', customerLogo: logo, customer: 'Customer', metric: { value: '60%', label: 'verified improvement' }, homeOrder: 10 });
+  for (const extension of ['PNG', 'gif', 'avif']) {
+    const cover = `images/Exam Paper 解析.${extension}`;
+    await writeFile(path.join(directory, cover), 'uploaded cover');
+    catalog.news[0].cover = extension === 'gif' ? `/${cover}` : cover;
+    await save();
+    await buildContent(directory);
+    const url = '/' + cover.split('/').map(encodeURIComponent).join('/');
+    for (const file of ['news/list.mdx', 'index.mdx']) assert.ok((await read(directory, file)).includes(`src="${url}"`));
+    const published = await read(directory, 'news/new-article.mdx');
+    const metadata = parseDocument(published.match(/^---\n([\s\S]*?)\n---\n/)[1]).toJS();
+    assert.equal(metadata.listing.cover, `/${cover}`);
+    assert.equal(metadata['og:image'], `https://resources.example.com${url}`);
+    const customer = await read(directory, 'cases/customer.mdx');
+    assert.equal(parseDocument(customer.match(/^---\n([\s\S]*?)\n---\n/)[1]).getIn(['listing', 'customerLogo']), `/${logo}`);
+    assert.ok((await read(directory, 'cases/list.mdx')).includes('src="/images/%E5%AE%A2%E6%88%B7%20Logo.PNG"'));
+    assert.deepEqual((await buildContent(directory, { check: true })).changed, []);
+  }
+});
+
 test('dragging Blog and Case Studies into Draft withdraws them and dragging back restores their original URLs', async t => {
   const { directory, catalog, save, article } = await fixture(t);
   await writeFile(path.join(directory, 'cases/customer.mdx'), article);

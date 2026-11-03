@@ -15,7 +15,7 @@
       "order": { "type": "integer", "minimum": 0, "description": "默认顺序，数字越小越靠前；省略为 0，相同时按日期从新到旧排序。" },
       "date": { "type": "string", "format": "date", "description": "发布日期，YYYY-MM-DD。" },
       "product": { "$ref": "#/definitions/text", "description": "产品筛选项，例如 xParse、DocFlow。" },
-      "cover": { "type": "string", "pattern": "^/images/[a-zA-Z0-9_./-]+\\.(webp|jpg|jpeg|svg)$", "description": "已上传的封面图片路径，推荐 WebP。" },
+      "cover": { "type": "string", "pattern": "^/images/.+", "description": "已上传的图片路径；支持上传格式、空格和中文文件名，省略开头的 / 时自动补齐。" },
       "featured": { "type": "boolean", "description": "是否使用列表大卡片。每类最多一个。" }
     },
     "news": {

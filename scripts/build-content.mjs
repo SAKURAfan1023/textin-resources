@@ -18,6 +18,7 @@ const escape = value => String(value).replace(/[&<>"'{}]/g, char => ({ '&': '&am
 const markdown = value => String(value).replace(/[\\`*_[\]{}<>]/g, '\\$&');
 const categoryNames = item => [item.category || item.industry].flat();
 const productNames = item => Array.isArray(item.product) ? item.product : [item.product];
+const imageUrl = value => value.split('/').map(encodeURIComponent).join('/');
 const shortDate = date => new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${date}T00:00:00Z`));
 
 function renderCard(article, home = false) {
@@ -31,9 +32,9 @@ function renderCard(article, home = false) {
     : `<div className="content-metric"><strong>${escape(item.metric.value)}</strong><span>${escape(item.metric.label)}</span></div>`;
   return `<div role="article" className="content-card${featured ? ' content-card--featured' : ''}"${!home ? ` data-content-page="${item.page}"` : ''} data-category="${escape(category)}" data-product="${escape(productNames(item).join(' & '))}"${Array.isArray(item.product) ? ` data-products="${escape(item.product.join('|'))}"` : ''} data-date="${item.date}"${item.scenarios ? ` data-scenarios="${escape(item.scenarios.join('|'))}"` : ''}>
   <a className="${home ? 'home-article-link' : 'content-link'}" href="/${item.page}">
-    <div className="content-visual"><img src="${escape(item.cover)}" alt="" loading="${featured ? 'eager' : 'lazy'}" /></div>
+    <div className="content-visual"><img src="${escape(imageUrl(item.cover))}" alt="" loading="${featured ? 'eager' : 'lazy'}" /></div>
     <div className="content-copy">
-      ${item.customer ? `<div className="content-customer">${item.customerLogo ? `<img src="${escape(item.customerLogo)}" alt="" loading="lazy" />` : ''}<p>${escape(item.customer)}</p></div>\n      ` : ''}<div className="content-meta">${categories.length > 1 ? `<span className="content-industries">${categories.map(value => `<span>${escape(value)}</span>`).join('')}</span>` : `<span>${escape(category)}</span>`}<span className="content-date">${shortDate(item.date)}</span></div>
+      ${item.customer ? `<div className="content-customer">${item.customerLogo ? `<img src="${escape(imageUrl(item.customerLogo))}" alt="" loading="lazy" />` : ''}<p>${escape(item.customer)}</p></div>\n      ` : ''}<div className="content-meta">${categories.length > 1 ? `<span className="content-industries">${categories.map(value => `<span>${escape(value)}</span>`).join('')}</span>` : `<span>${escape(category)}</span>`}<span className="content-date">${shortDate(item.date)}</span></div>
       <h2>${escape(title)}</h2>
       <p className="content-summary">${escape(description)}</p>
       <div className="content-bottom">${bottom}</div>
@@ -56,6 +57,13 @@ async function readArticle(directory, file, siteUrl, validate) {
   if (document.errors.length) throw new Error(`${file}: ${document.errors[0].message}`);
   const data = document.toJS();
   if (!Object.hasOwn(data || {}, 'listing')) return null;
+  for (const field of ['cover', 'customerLogo']) {
+    const value = data.listing?.[field];
+    if (typeof value === 'string' && !value.startsWith('/')) {
+      data.listing[field] = `/${value}`;
+      document.setIn(['listing', field], data.listing[field]);
+    }
+  }
   if (!validate(data.listing)) throw new Error(`${file}: listing ${validate.errors.map(error => `${error.instancePath} ${error.message}`).join('; ')}`);
   const item = { ...data.listing, page: file.slice(0, -4) };
   if (!/^(news|cases)\/[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(item.page)) throw new Error(`${file}: use a single article filename with letters, numbers, hyphens or underscores.`);
@@ -92,7 +100,7 @@ async function readArticle(directory, file, siteUrl, validate) {
   document.set('timestamp', false);
   if (!Object.hasOwn(item, 'homeOrder')) document.setIn(['listing', 'homeOrder'], false);
   document.set('sidebarTitle', item.customer || data.title);
-  document.set('og:image', new URL(item.cover, siteUrl).href);
+  document.set('og:image', new URL(imageUrl(item.cover), siteUrl).href);
   const updated = `---\n${document.toString({ lineWidth: 0 })}---\n\n${body}\n`;
   return { item, title: data.title, description: data.description, file, source: updated };
 }

@@ -221,7 +221,7 @@ listing: # 首页与列表配置
 | 官方 Steps、Accordion、Tabs | 步骤、折叠区、切换内容 |
 | 普通链接 | 站内使用 `/cases/文章路径` 或 `/news/文章路径` |
 
-封面优先使用 WebP，横向构图、重点居中；图片路径以 `/images/` 开头，支持 `.webp`、`.jpg`、`.jpeg`、`.svg`。
+封面与客户 Logo 可直接使用上传后的图片，不要求转成 WebP 或重命名；支持 PNG 等上传格式、空格和中文文件名。将文件路径填入 `cover` 或 `customerLogo`，例如 `images/blog/Intelligent Exam Paper Parsing.png`；开头的 `/` 会自动补齐，首页、列表和分享图片地址自动同步。图片须已上传到 `images/`，封面建议横向构图、重点居中。
 
 正文使用 Markdown 和 Mintlify 官方组件，不添加 `<time>`、`<div>`、自定义组件或脚本。返回列表、信息栏与底部 CTA 自动生成，不编辑 `content:metadata`、`content:footer` 注释之间的内容。页头配置不会显示为正文。
 
