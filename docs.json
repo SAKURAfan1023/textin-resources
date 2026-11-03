@@ -35,7 +35,7 @@
         ]
       },
       {
-        "group": "draft",
+        "group": "Draft",
         "pages": [
           {
             "group": "case",
@@ -65,7 +65,8 @@
               "news/20260813171405940"
             ]
           }
-        ]
+        ],
+        "hidden": true
       }
     ]
   },
