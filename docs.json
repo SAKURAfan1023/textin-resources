@@ -15,9 +15,7 @@
         "pages": [
           "index",
           "news/list",
-          "cases/list",
-          "cases/list/2",
-          "cases/list/3"
+          "cases/list"
         ]
       },
       {
@@ -29,9 +27,9 @@
       {
         "group": "Case Studies",
         "pages": [
-          "cases/20260515161812188",
+          "cases/20260109165413680",
           "cases/20260120144502796",
-          "cases/20260109165413680"
+          "cases/20260515161812188"
         ]
       },
       {
@@ -40,7 +38,7 @@
           {
             "group": "case",
             "pages": [
-              "test1",
+              "cases/test1",
               "cases/20260115115348705",
               "cases/20260115154400225",
               "cases/20260120170626786",
@@ -158,5 +156,97 @@
   },
   "search": {
     "prompt": "Search Blog and Case Studies…"
-  }
+  },
+  "redirects": [
+    {
+      "source": "/cases/20260115115348705",
+      "destination": "/cases/list",
+      "permanent": false
+    },
+    {
+      "source": "/cases/20260115154400225",
+      "destination": "/cases/list",
+      "permanent": false
+    },
+    {
+      "source": "/cases/20260120170626786",
+      "destination": "/cases/list",
+      "permanent": false
+    },
+    {
+      "source": "/cases/20260209172616177",
+      "destination": "/cases/list",
+      "permanent": false
+    },
+    {
+      "source": "/cases/20260316170957067",
+      "destination": "/cases/list",
+      "permanent": false
+    },
+    {
+      "source": "/cases/20260330181528169",
+      "destination": "/cases/list",
+      "permanent": false
+    },
+    {
+      "source": "/cases/20260422104515242",
+      "destination": "/cases/list",
+      "permanent": false
+    },
+    {
+      "source": "/cases/20260525114724940",
+      "destination": "/cases/list",
+      "permanent": false
+    },
+    {
+      "source": "/cases/20260709164632354",
+      "destination": "/cases/list",
+      "permanent": false
+    },
+    {
+      "source": "/cases/20260731103033264",
+      "destination": "/cases/list",
+      "permanent": false
+    },
+    {
+      "source": "/cases/20260915144322620",
+      "destination": "/cases/list",
+      "permanent": false
+    },
+    {
+      "source": "/cases/20261016113656382",
+      "destination": "/cases/list",
+      "permanent": false
+    },
+    {
+      "source": "/cases/test1",
+      "destination": "/cases/list",
+      "permanent": false
+    },
+    {
+      "source": "/news/20260721144155912",
+      "destination": "/news/list",
+      "permanent": false
+    },
+    {
+      "source": "/news/20260727145812209",
+      "destination": "/news/list",
+      "permanent": false
+    },
+    {
+      "source": "/news/20260731145844973",
+      "destination": "/news/list",
+      "permanent": false
+    },
+    {
+      "source": "/news/20260813171405940",
+      "destination": "/news/list",
+      "permanent": false
+    },
+    {
+      "source": "/news/20260922154509747",
+      "destination": "/news/list",
+      "permanent": false
+    }
+  ]
 }

@@ -71,6 +71,111 @@ test('editing the native title updates both lists without replacing authored con
   assert.match(await read(directory, 'news/new-article.mdx'), /Keep this body unchanged\./);
 });
 
+test('dragging Blog and Case Studies into Draft withdraws them and dragging back restores their original URLs', async t => {
+  const { directory, catalog, save, article } = await fixture(t);
+  await writeFile(path.join(directory, 'cases/customer.mdx'), article);
+  catalog.cases.push({ page: 'cases/customer', date: '2026-10-23', industry: 'Manufacturing', scenarios: ['Document structuring'], product: 'xParse', cover: '/images/cover.webp', customer: 'Customer', metric: { value: '60%', label: 'verified improvement' }, homeOrder: 10 });
+  await save();
+  await buildContent(directory);
+  const originals = await Promise.all(['news/new-article.mdx', 'cases/customer.mdx'].map(file => read(directory, file)));
+  const docs = JSON.parse(await read(directory, 'docs.json'));
+  const draft = docs.navigation.groups.find(group => group.group === 'Draft');
+  draft.hidden = false;
+  draft.pages = [{ group: 'case', pages: ['cases/customer'] }, 'news/new-article'];
+  // Moving between navigation groups changes docs.json, not the MDX files.
+  docs.navigation.groups[1].pages = [];
+  docs.navigation.groups[2].pages = [];
+  await writeFile(path.join(directory, 'docs.json'), JSON.stringify(docs));
+  await assert.rejects(buildContent(directory, { check: true }), /out of date/);
+  assert.equal((await buildContent(directory)).count, 0);
+  for (const file of ['index.mdx', 'news/list.mdx', 'cases/list.mdx']) assert.doesNotMatch(await read(directory, file), /href="\/(news\/new-article|cases\/customer)"|&quot;page&quot;/);
+  const withdrawn = JSON.parse(await read(directory, 'docs.json')).navigation.groups;
+  assert.deepEqual(withdrawn[1].pages, []);
+  assert.deepEqual(withdrawn[2].pages, []);
+  assert.equal(withdrawn.find(group => group.group === 'Draft').hidden, true);
+  assert.deepEqual(JSON.parse(await read(directory, 'docs.json')).redirects, [
+    { source: '/cases/customer', destination: '/cases/list', permanent: false },
+    { source: '/news/new-article', destination: '/news/list', permanent: false }
+  ]);
+  assert.deepEqual(await Promise.all(['news/new-article.mdx', 'cases/customer.mdx'].map(file => read(directory, file))), originals);
+  assert.deepEqual((await buildContent(directory)).changed, []);
+  const restore = JSON.parse(await read(directory, 'docs.json'));
+  restore.navigation.groups.find(group => group.group === 'Draft').pages = [];
+  restore.navigation.groups[1].pages = ['news/new-article'];
+  restore.navigation.groups[2].pages = ['cases/customer'];
+  await writeFile(path.join(directory, 'docs.json'), JSON.stringify(restore));
+  assert.equal((await buildContent(directory)).count, 2);
+  assert.match(await read(directory, 'index.mdx'), /href="\/news\/new-article"/);
+  assert.match(await read(directory, 'cases/list.mdx'), /href="\/cases\/customer"/);
+  assert.deepEqual(JSON.parse(await read(directory, 'docs.json')).redirects, []);
+  assert.deepEqual((await buildContent(directory, { check: true })).changed, []);
+});
+
+test('Draft keeps incomplete content without validation and rejects non-article paths before writing outputs', async t => {
+  const { directory } = await fixture(t);
+  await buildContent(directory);
+  const docs = JSON.parse(await read(directory, 'docs.json'));
+  const draft = docs.navigation.groups.find(group => group.group === 'Draft');
+  draft.pages = ['news/new-article'];
+  await writeFile(path.join(directory, 'docs.json'), JSON.stringify(docs));
+  await writeFile(path.join(directory, 'news/new-article.mdx'), 'Work in progress');
+  assert.equal((await buildContent(directory)).count, 0);
+  assert.equal(await read(directory, 'news/new-article.mdx'), 'Work in progress');
+  const baseline = await read(directory, 'news/list.mdx');
+  for (const invalid of ['cases/list', 'index', '../secret', 'news/missing']) {
+    draft.pages = [invalid];
+    await writeFile(path.join(directory, 'docs.json'), JSON.stringify(docs));
+    await assert.rejects(buildContent(directory), /Draft:/);
+    assert.equal(await read(directory, 'news/list.mdx'), baseline);
+  }
+});
+
+test('watching navigation drag operations rebuilds Draft redirects and restores lists', { timeout: 10000 }, async t => {
+  const { directory } = await fixture(t);
+  await buildContent(directory);
+  let onReport = () => {};
+  const close = watchContent(directory, (error, result) => onReport(error, result));
+  try {
+    for (const pages of [['news/new-article'], []]) {
+      const docs = JSON.parse(await read(directory, 'docs.json'));
+      docs.navigation.groups.find(group => group.group === 'Draft').pages = pages;
+      const updated = new Promise((resolve, reject) => { onReport = (error, result) => { if (error) reject(error); else if (result.changed.includes('news/list.mdx')) resolve(result); }; });
+      await writeFile(path.join(directory, 'docs.json'), JSON.stringify(docs));
+      assert.equal((await updated).count, pages.length ? 0 : 1);
+    }
+    assert.match(await read(directory, 'news/list.mdx'), /href="\/news\/new-article"/);
+  } finally { await close(); }
+});
+
+test('Draft preserves unrelated redirects, blocks redirect conflicts and rejects an invalid restoration', async t => {
+  const { directory } = await fixture(t);
+  await buildContent(directory);
+  const docs = JSON.parse(await read(directory, 'docs.json'));
+  const draft = docs.navigation.groups.find(group => group.group === 'Draft');
+  const existing = { source: '/old-blog', destination: '/news/list' };
+  const conflict = { source: '/news/new-article', destination: '/somewhere-else' };
+  docs.redirects = [existing, conflict];
+  draft.pages = ['news/new-article'];
+  await writeFile(path.join(directory, 'docs.json'), JSON.stringify(docs));
+  const baseline = await read(directory, 'news/list.mdx');
+  await assert.rejects(buildContent(directory), /existing redirect/);
+  assert.equal(await read(directory, 'news/list.mdx'), baseline);
+  docs.redirects = [existing];
+  await writeFile(path.join(directory, 'docs.json'), JSON.stringify(docs));
+  await buildContent(directory);
+  assert.deepEqual(JSON.parse(await read(directory, 'docs.json')).redirects[0], existing);
+  const source = await read(directory, 'news/new-article.mdx');
+  await writeFile(path.join(directory, 'news/new-article.mdx'), source.replace('date: 2026-10-23', 'date: invalid'));
+  const restore = JSON.parse(await read(directory, 'docs.json'));
+  restore.navigation.groups.find(group => group.group === 'Draft').pages = [];
+  await writeFile(path.join(directory, 'docs.json'), JSON.stringify(restore));
+  await assert.rejects(buildContent(directory), /listing.*date/);
+  assert.deepEqual(JSON.parse(await read(directory, 'docs.json')).redirects.find(redirect => redirect.source === '/news/new-article'), { source: '/news/new-article', destination: '/news/list', permanent: false });
+  await writeFile(path.join(directory, 'news/new-article.mdx'), source);
+  await buildContent(directory);
+  assert.deepEqual(JSON.parse(await read(directory, 'docs.json')).redirects, [existing]);
+});
+
 test('operators select unlimited homepage cards, order each section and withdraw with false', async t => {
   const { directory, catalog, save, article } = await fixture(t);
   catalog.news[0].homeOrder = false;

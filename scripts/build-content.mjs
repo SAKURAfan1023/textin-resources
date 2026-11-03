@@ -99,6 +99,34 @@ async function readArticle(directory, file, siteUrl, validate) {
 
 export async function buildContent(directory = root, { check = false } = {}) {
   const read = file => readFile(path.join(directory, file), 'utf8');
+  const docs = JSON.parse(await read('docs.json'));
+  const groups = docs.navigation?.groups;
+  if (!Array.isArray(groups)) throw new Error('docs.json: navigation.groups is required.');
+  if (groups.filter(item => item.group === 'Draft').length > 1) throw new Error('docs.json: keep a single Draft group.');
+  let draftGroup = groups.find(item => item.group === 'Draft');
+  if (!draftGroup) {
+    draftGroup = { group: 'Draft', hidden: true, pages: [] };
+    groups.push(draftGroup);
+  }
+  draftGroup.hidden = true;
+  const drafts = new Set();
+  const collectDrafts = async pages => {
+    for (const page of pages) {
+      if (typeof page !== 'string') { await collectDrafts(page.pages || []); continue; }
+      if (!/^(news|cases)\/[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(page) || page.endsWith('/list')) throw new Error(`Draft: only Blog and Case Studies articles are allowed: ${page}`);
+      try { await access(path.join(directory, `${page}.mdx`)); }
+      catch { throw new Error(`Draft: article not found: ${page}.mdx`); }
+      drafts.add(page);
+    }
+  };
+  await collectDrafts(draftGroup.pages || []);
+  const isDraftRedirect = redirect => /^\/(news|cases)\/[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(redirect.source) && redirect.destination === `/${redirect.source.split('/')[1]}/list` && redirect.permanent === false;
+  const redirects = (docs.redirects || []).filter(redirect => !isDraftRedirect(redirect));
+  for (const page of [...drafts].sort()) {
+    if (redirects.some(redirect => redirect.source === `/${page}`)) throw new Error(`Draft: remove the existing redirect before withdrawing ${page}.`);
+    redirects.push({ source: `/${page}`, destination: `/${page.split('/')[0]}/list`, permanent: false });
+  }
+  if (redirects.length || docs.redirects) docs.redirects = redirects;
   const schema = JSON.parse(await read('content/schema.json'));
   const settings = JSON.parse(await read('content/site.json'));
   const ajv = new Ajv({ allErrors: true, strict: false });
@@ -108,7 +136,7 @@ export async function buildContent(directory = root, { check = false } = {}) {
   const articles = {};
   for (const kind of ['news', 'cases']) {
     const validate = ajv.compile({ ...schema, $ref: `#/definitions/${kind === 'news' ? 'news' : 'story'}` });
-    const files = (await readdir(path.join(directory, kind))).filter(file => file.endsWith('.mdx') && file !== 'list.mdx');
+    const files = (await readdir(path.join(directory, kind))).filter(file => file.endsWith('.mdx') && file !== 'list.mdx' && !drafts.has(`${kind}/${file.slice(0, -4)}`));
     articles[kind] = (await Promise.all(files.map(file => readArticle(directory, `${kind}/${file}`, settings.siteUrl, validate)))).filter(Boolean);
     articles[kind].sort((a, b) => (a.item.order ?? 0) - (b.item.order ?? 0) || b.item.date.localeCompare(a.item.date) || a.item.page.localeCompare(b.item.page));
     if (articles[kind].filter(article => article.item.featured).length > 1) throw new Error(`${kind}: only one article can have featured: true.`);
@@ -143,9 +171,6 @@ export async function buildContent(directory = root, { check = false } = {}) {
     home = home.replace(placeholder, selected.length ? `<section className="home-latest" data-home-section="${kind}">\n<div className="section-heading"><h2>${title}</h2><a href="/${kind}/list">${cta}</a></div>\n<div className="home-article-grid">\n${selected.map(article => renderCard(article, true)).join('\n\n')}\n</div>\n</section>` : '');
   }
   output.set('index.mdx', home);
-  const docs = JSON.parse(await read('docs.json'));
-  const groups = docs.navigation?.groups;
-  if (!Array.isArray(groups)) throw new Error('docs.json: navigation.groups is required.');
   for (const [kind, label] of [['news', 'Blog'], ['cases', 'Case Studies']]) {
     const group = groups.find(item => item.group === label);
     if (!group) throw new Error(`docs.json: missing ${label} navigation group.`);
@@ -194,6 +219,11 @@ export function watchContent(directory, report) {
   const watchers = ['news', 'cases', 'images', 'templates', 'content'].map(folder => watch(path.join(directory, folder), { recursive: true }, (_, filename) => {
     const file = String(filename || '').replaceAll('\\', '/');
     if (['news', 'cases'].includes(folder) && (!file.endsWith('.mdx') || file === 'list.mdx' || file.startsWith('list/'))) return;
+    clearTimeout(timer);
+    timer = setTimeout(rebuild, 150);
+  }));
+  watchers.push(watch(directory, (_, filename) => {
+    if (String(filename) !== 'docs.json') return;
     clearTimeout(timer);
     timer = setTimeout(rebuild, 150);
   }));
