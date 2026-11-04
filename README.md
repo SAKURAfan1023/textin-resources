@@ -223,7 +223,7 @@ listing: # 首页与列表配置
 
 封面与客户 Logo 可直接使用上传后的图片，不要求转成 WebP 或重命名；支持 PNG 等上传格式、空格和中文文件名。将文件路径填入 `cover` 或 `customerLogo`，例如 `images/blog/Intelligent Exam Paper Parsing.png`；开头的 `/` 会自动补齐，首页、列表和分享图片地址自动同步。图片须已上传到 `images/`，封面建议横向构图、重点居中。
 
-正文使用 Markdown 和 Mintlify 官方组件，不添加 `<time>`、`<div>`、自定义组件或脚本。返回列表、信息栏与底部 CTA 自动生成，不编辑 `content:metadata`、`content:footer` 注释之间的内容。页头配置不会显示为正文。
+正文使用 Markdown 和 Mintlify 官方组件，不添加 `<time>`、`<div>`、自定义组件或脚本。返回列表、信息栏与底部 CTA 自动生成，不编辑 `content:metadata`、`content:footer` 注释之间的内容。已有底部 CTA 保留编辑器保存的写法，`<Card />` 和 `<Card>…</Card>` 均可，不会强制互转。页头配置不会显示为正文。
 
 桌面端左侧显示 `Published by`、TextIn Logo，以及 LinkedIn、X、复制链接三个圆形分享按钮；右侧显示目录、注册和联系入口。这些元素由开发统一维护，运营无需在 MDX 中配置。
 

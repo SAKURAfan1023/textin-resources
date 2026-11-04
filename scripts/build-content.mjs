@@ -93,7 +93,8 @@ async function readArticle(directory, file, siteUrl, validate) {
   const footerIndex = body.indexOf(footerStart);
   const footerLast = body.indexOf(footerEnd);
   if ((footerIndex < 0) !== (footerLast < 0) || (footerIndex >= 0 && footerLast < footerIndex)) throw new Error(`${file}: damaged generated footer markers.`);
-  body = footerIndex < 0 ? `${body}\n\n${footer}` : body.slice(0, footerIndex) + footer + body.slice(footerLast + footerEnd.length);
+  // Add the default footer once; preserve the editor's existing Card syntax.
+  if (footerIndex < 0) body = `${body}\n\n${footer}`;
   // Only update generated fields. Preserve the author's YAML style and article body.
   document.set('mode', 'center');
   document.set('hideFooterPagination', true);

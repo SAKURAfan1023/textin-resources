@@ -71,6 +71,28 @@ test('editing the native title updates both lists without replacing authored con
   assert.match(await read(directory, 'news/new-article.mdx'), /Keep this body unchanged\./);
 });
 
+test('content publishing preserves both self-closing and paired footer Cards after editor saves', async t => {
+  const { directory } = await fixture(t);
+  const file = 'news/new-article.mdx';
+  await buildContent(directory);
+  const baseline = await read(directory, file);
+  const defaultCard = '<Card title="Put document AI to work." href="https://www.textin.ai/contact" cta="Talk to our team" />';
+  for (const card of [defaultCard, defaultCard.replace(' />', '>\n\n</Card>')]) {
+    const edited = baseline.replace(defaultCard, card);
+    await writeFile(path.join(directory, file), edited);
+    assert.deepEqual((await buildContent(directory, { check: true })).changed, []);
+    await buildContent(directory);
+    assert.equal(await read(directory, file), edited);
+    await writeFile(path.join(directory, file), edited.replace('A new article', 'An updated title'));
+    await buildContent(directory);
+    assert.ok((await read(directory, file)).includes(card));
+    assert.match(await read(directory, 'news/list.mdx'), /An updated title/);
+    assert.deepEqual((await buildContent(directory)).changed, []);
+    await writeFile(path.join(directory, file), baseline);
+    await buildContent(directory);
+  }
+});
+
 test('uploaded image formats and filenames work without renaming and missing leading slashes are saved automatically', async t => {
   const { directory, catalog, save, article } = await fixture(t);
   const logo = 'images/客户 Logo.PNG';
