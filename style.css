@@ -4,6 +4,8 @@
 :root { --content-width: 800px; --ink: #111114; --muted: #626773; --blue: #1a66ff; --line: #e1e4eb; --soft: #f4f5f8; }
 html { scroll-behavior: smooth; scroll-padding-top: 92px; }
 body { font-family: 'TextIn Sans', 'Helvetica Neue', Arial, sans-serif; color: var(--ink); }
+/* Keep text selection and copying without the Mintlify assistant popup. */
+#text-selection-tooltip { display: none !important; }
 /* Header surfaces follow the overseas DesktopV2 behavior. */
 #navbar { position: fixed; z-index: 35; border: 0; background: transparent; color: #000; }
 #navbar-transition { background: rgba(255,255,255,.96) !important; border: 0; box-shadow: 0 1px 0 rgba(225,228,235,.8); backdrop-filter: blur(16px); transition: background-color 400ms ease-in-out, backdrop-filter 280ms ease, box-shadow 280ms ease; }
