@@ -1,6 +1,6 @@
 ---
-title: "RAGFlow x TextIn Integration 2.0: Deploy Faster with Prebuilt Images and Switch Parsers Flexibly"
-description: "The updated RAGFlow x TextIn integration delivers high-quality PDF parsing for RAG systems, with flexible switching between parsing engines. Includes China-based Docker image acceleration and a detailed usage guide."
+title: "RAGFlow x TextIn Integration 2.0: High-Quality PDF Parsing and Flexible Parser Switching"
+description: "The updated RAGFlow x TextIn integration brings high-quality PDF parsing to RAG systems, with flexible parser switching and a step-by-step guide to deployment, configuration, and usage."
 keywords:
   - "xParse Document Parsing"
   - "Artificial Intelligence"
@@ -11,7 +11,7 @@ listing:
   category: "Announcements"
   product: "xParse"
   date: "2026-04-16"
-  cover: "/images/blog/20261109/RAGFlow-×-TextIn-集成2.0科技横幅.png"
+  cover: "/images/blog/20261109/RAGFlow_TextIn_Integration_2.0.jpg"
   readMinutes: 4
   order: 30
   featured: false
@@ -19,7 +19,7 @@ mode: "center"
 hideFooterPagination: true
 timestamp: false
 source: "https://www.textin.com/news/20260416141504142"
-og:image: "https://intsig-2a639cbc.mintlify.site/images/blog/20261109/RAGFlow-%C3%97-TextIn-%E9%9B%86%E6%88%902.0%E7%A7%91%E6%8A%80%E6%A8%AA%E5%B9%85.png"
+og:image: "https://intsig-2a639cbc.mintlify.site/images/blog/20261109/RAGFlow_TextIn_Integration_2.0.jpg"
 sidebarTitle: "RAGFlow x TextIn Integration 2.0: Deploy Faster with Prebuilt Images and Switch Parsers Flexibly"
 ---
 
@@ -37,7 +37,7 @@ This project is an enhanced version of RAGFlow that integrates TextIn's intellig
 
 TextIn is INTSIG's cloud-based document intelligence platform. Powered by AI, it accurately extracts text, tables, charts, and mathematical formulas from documents.
 
-![1280X1280-2_English](/images/blog/20261109/1280X1280-2_English.jpg "1280X1280-2_English")
+![TextIn_xParse_diagram](/images/blog/20261109/TextIn_xParse_diagram.jpg "TextIn_xParse_diagram")
 
 **GitHub:** [https://github.com/intsig-textin/xparse-ragflow](https://github.com/intsig-textin/xparse-ragflow)
 
@@ -101,99 +101,15 @@ Before getting started, make sure you have:
 
 ⚠️ **Version Compatibility:** Make sure the deployed service image version matches the current tag in the GitHub repository to avoid version compatibility issues.
 
-### 🇨🇳 China-Based Docker Image Acceleration
-
-Users in China can use the following Alibaba Cloud images to accelerate deployment and improve image pull speeds.
-
-<table>
-  <colgroup>
-    <col width="124" />
-    <col width="245" />
-    <col width="450" />
-  </colgroup>
-  <thead>
-    <tr>
-      <th>Service</th>
-      <th>Official Image</th>
-      <th>China-Based Image</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>RAGFlow</td>
-      <td>`infiniflow/ragflow:v0.24.0`</td>
-      <td>`crpi-2ix4w0sw61gwpv0x.cn-shanghai.personal.cr.aliyuncs.com/intsig_acg/ragflow:v0.24.0` ⚠️ Built from this repository's source code</td>
-    </tr>
-    <tr>
-      <td>MySQL</td>
-      <td>`mysql:8.0.39`</td>
-      <td>`crpi-2ix4w0sw61gwpv0x.cn-shanghai.personal.cr.aliyuncs.com/intsig_acg/mysql:8.0.39`</td>
-    </tr>
-    <tr>
-      <td>Elasticsearch</td>
-      <td>`elasticsearch:8.11.3`</td>
-      <td>`crpi-2ix4w0sw61gwpv0x.cn-shanghai.personal.cr.aliyuncs.com/intsig_acg/elasticsearch:8.11.3`</td>
-    </tr>
-    <tr>
-      <td>MinIO</td>
-      <td>`quay.io/minio/minio:RELEASE.2025-06-13T11-33-47Z`</td>
-      <td>`crpi-2ix4w0sw61gwpv0x.cn-shanghai.personal.cr.aliyuncs.com/intsig_acg/minio:RELEASE.2025-06-13T11-33-47Z`</td>
-    </tr>
-    <tr>
-      <td>Valkey</td>
-      <td>`valkey/valkey:8`</td>
-      <td>`crpi-2ix4w0sw61gwpv0x.cn-shanghai.personal.cr.aliyuncs.com/intsig_acg/valkey:8`</td>
-    </tr>
-  </tbody>
-</table>
-
-### ⚙️ Configuration
-
-To use the China-based images, modify the following files.
-
-#### 📄 Step 1: Modify `docker/.env` (RAGFlow Main Service Image)
-
-Update line 157:
-
-```bash
-RAGFLOW_IMAGE=crpi-2ix4w0sw61gwpv0x.cn-shanghai.personal.cr.aliyuncs.com/intsig_acg/ragflow:v0.24.0
-```
-
-#### 📄 Step 2: Modify `docker/docker-compose-base.yml` (Dependency Service Images)
-
-Update the corresponding image entries:
-
-```yaml
-# Line 5 - Elasticsearch
-image: crpi-2ix4w0sw61gwpv0x.cn-shanghai.personal.cr.aliyuncs.com/intsig_acg/elasticsearch:8.11.3
-
-# Line 178 - MySQL
-image: crpi-2ix4w0sw61gwpv0x.cn-shanghai.personal.cr.aliyuncs.com/intsig_acg/mysql:8.0.39
-
-# Line 205 - MinIO
-image: crpi-2ix4w0sw61gwpv0x.cn-shanghai.personal.cr.aliyuncs.com/intsig_acg/minio:RELEASE.2025-06-13T11-33-47Z
-
-# Line 227 - Valkey
-image: crpi-2ix4w0sw61gwpv0x.cn-shanghai.personal.cr.aliyuncs.com/intsig_acg/valkey:8
-```
-
 ## 📦 Installation
 
-💡 Choose one of the following deployment methods based on your requirements.
+### 🔧 Build from Source
 
-### 🎯 Option 1: Use China-Based Prebuilt Images (Recommended)
-
-✨ Suitable for quick deployment and production environments.
-
-Follow the instructions in the **China-Based Docker Image Acceleration** section above to update the image addresses in `docker/.env` and `docker/docker-compose-base.yml`.
-
-### 🔧 Option 2: Build from Source
-
-🛠️ Suitable for scenarios that require code modifications or debugging.
+This method is suitable for scenarios that require code customization, debugging, or deployment of the TextIn-integrated RAGFlow version.
 
 #### 📥 Step 1: Clone the Repository and Build the Image
 
-```bash
+```text
 git clone https://github.com/intsig-textin/xparse-ragflow.git
 cd xparse-ragflow
 docker build -t your-image-name:tag -f Dockerfile .
@@ -203,15 +119,15 @@ docker build -t your-image-name:tag -f Dockerfile .
 
 Modify line 157 in `docker/.env`:
 
-```bash
+```text
 RAGFLOW_IMAGE=your-image-name:tag
 ```
 
 ## 🚀 Launch and Access
 
-✅ After completing the configuration, run the following commands to start the services:
+After completing the configuration, run the following commands to start the services:
 
-```bash
+```text
 cd docker
 DEVICE=gpu docker-compose up -d
 ```
@@ -224,7 +140,7 @@ Once the services have started, open the following address in your browser:
 http://localhost:{SVR_WEB_HTTP_PORT}
 ```
 
-💡 The default port is `80`. You can change it by configuring `SVR_WEB_HTTP_PORT` in `docker/.env`.
+💡The default port is `80`. You can change it by configuring `SVR_WEB_HTTP_PORT` in `docker/.env`.
 
 ## 📘 User Guide
 
