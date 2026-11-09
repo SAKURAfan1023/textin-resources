@@ -73,7 +73,7 @@
   "logo": {
     "light": "/images/brand/logo-dark.webp",
     "dark": "/images/brand/logo-light.webp",
-    "href": "/"
+    "href": "https://www.textin.ai"
   },
   "navbar": {
     "links": [
