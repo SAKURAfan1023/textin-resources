@@ -95,8 +95,8 @@ TextIn is INTSIG's cloud-based document intelligence platform. Powered by AI, it
 
 Before getting started, make sure you have:
 
-1. ✅ A registered TextIn account ([https://www.textin.com/](https://www.textin.com/)) with API access enabled.
-2. ✅ Your **App ID** and **Secret Code** from the [TextIn Console](https://www.textin.com/console/dashboard/setting).
+1. ✅ A registered TextIn account ([https://www.textin.ai](https://www.textin.ai)) with API access enabled.
+2. ✅ Your **App ID** and **Secret Code** from the [TextIn Console](https://www.textin.ai/user/login?redirect=%2F).
 3. ✅ The corresponding official version of RAGFlow installed locally.
 
 ⚠️ **Version Compatibility:** Make sure the deployed service image version matches the current tag in the GitHub repository to avoid version compatibility issues.
@@ -155,7 +155,7 @@ Locate the TextIn card, click **Add Model**, and enter the following configurati
 | Configuration | Description | Example |
 | :-- | :-- | :-- |
 | Model Name | Custom name for identification | `xparser` or `textin-primary` |
-| TextIn API URL | API endpoint (pre-filled by default) | `https://api.textin.com/ai/service/v1/pdf_to_markdown` |
+| TextIn API URL | API endpoint (pre-filled by default) | `https://api.textin.ai/ai/service/v1/pdf_to_markdown` |
 | App ID | Obtain from the TextIn Console | `your_app_id` |
 | Secret Code | Obtain from the TextIn Console | `your_secret_code` |
 
@@ -289,7 +289,7 @@ If a TextIn API request fails, the parsing task terminates with an error. We rec
 
 TextIn is a service billed based on API calls or the number of pages processed.
 
-For specific charges, log in to the [TextIn Console](https://www.textin.com/console/dashboard) to check your account balance and billing details.
+For specific charges, log in to the [TextIn Console](https://www.textin.ai/user/login?redirect=%2F) to check your account balance and billing details.
 
 ### Q7: How fast is parsing compared with local DeepDOC?
 
@@ -411,8 +411,8 @@ bash docker/launch_backend_service.sh
 
 - **RAGFlow GitHub Repository:** [https://github.com/infiniflow/ragflow](https://github.com/infiniflow/ragflow)
 - **RAGFlow Documentation:** [https://ragflow.io/docs](https://ragflow.io/docs)
-- **TextIn Official Website:** [https://www.textin.com/](https://www.textin.com/)
-- **TextIn API Documentation:** [https://docs.textin.com/xparse/parse-quickstart](https://docs.textin.com/xparse/parse-quickstart)
+- **TextIn Official Website:** [https://www.textin.ai](https://www.textin.ai)
+- **TextIn API Documentation:** [https://docs.textin.ai/api-reference/endpoint/extract-v3](https://docs.textin.ai/api-reference/endpoint/extract-v3)
 
 <Card title="Explore xParse for structured documents" href="https://www.textin.ai/xparse">
   Preserve the information your downstream AI application needs.
