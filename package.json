@@ -9,7 +9,7 @@
     "content:build": "node scripts/build-content.mjs",
     "content:check": "node scripts/build-content.mjs --check",
     "content:watch": "node scripts/build-content.mjs --watch",
-    "test": "node --test scripts/build-content.test.mjs",
+    "test": "node --test scripts/*.test.mjs",
     "preview": "node scripts/build-content.mjs --preview"
   },
   "dependencies": {

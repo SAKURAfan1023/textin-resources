@@ -169,6 +169,43 @@
       return url.origin === location.origin && (listPaths.includes(url.pathname) || /^\/(cases|news)\/list\/(?:[2-9]|[1-9]\d+)$/.test(url.pathname)) ? url.pathname + url.search : fallback;
     } catch { return fallback; }
   }
+  // Campaign attribution and list return state have separate URL parameters.
+  function campaignFrom() {
+    let value = new URLSearchParams(location.search).get('from');
+    if (value && safeReturn(value, '') !== '') value = new URL(value, location.origin).searchParams.get('from');
+    try {
+      if (value) sessionStorage.setItem('textin_resource_campaign', JSON.stringify({ value, time: Date.now() }));
+      else {
+        const cached = JSON.parse(sessionStorage.getItem('textin_resource_campaign') || 'null');
+        if (cached && Date.now() - cached.time < 3600000) value = cached.value;
+      }
+    } catch { /* Optional attribution must not block navigation. */ }
+    return value || '';
+  }
+  function returnTarget(fallback) {
+    const params = new URLSearchParams(location.search);
+    return safeReturn(params.get('returnTo') || params.get('from'), fallback);
+  }
+  function navigationTarget(link) {
+    const target = new URL(link.href, location.origin);
+    const internal = target.origin === location.origin;
+    if (!internal && target.origin !== 'https://www.textin.ai') return target;
+    const from = campaignFrom();
+    if (internal && link.matches('[data-content-back]')) target.href = new URL(returnTarget(target.pathname), location.origin).href;
+    if (internal && link.matches('.content-link')) target.searchParams.set('returnTo', location.pathname + location.search);
+    if (from && !target.searchParams.has('from')) target.searchParams.set('from', from);
+    if (!internal && /^\/(?:user\/(?:login|register)|contact)\/?$/.test(target.pathname)) target.searchParams.set('referrer', location.href);
+    return target;
+  }
+  function prepareNavigation() {
+    document.querySelectorAll('a[href]').forEach(link => {
+      const target = new URL(link.href, location.origin);
+      if (target.origin === location.origin && /^\/(cases|news)(?:\/|$)/.test(target.pathname) || target.origin === 'https://www.textin.ai') {
+        const href = navigationTarget(link).href;
+        if (link.href !== href) link.href = href;
+      }
+    });
+  }
   function closeDropdown(wrapper) {
     wrapper.querySelector('.catalog-select-trigger').setAttribute('aria-expanded', 'false');
     wrapper.querySelector('.catalog-select-menu').hidden = true;
@@ -337,7 +374,9 @@
       }
       for (const link of (original ? initial : results).querySelectorAll('.content-link')) {
         const target = new URL(link.getAttribute('href'), location.origin);
-        target.searchParams.set('from', url.pathname + url.search);
+        target.searchParams.set('returnTo', url.pathname + url.search);
+        const from = campaignFrom();
+        if (from) target.searchParams.set('from', from);
         link.href = target.pathname + target.search;
       }
     } catch {
@@ -397,6 +436,7 @@
       }
     }
     mountArticle(content);
+    prepareNavigation();
     const footer = document.querySelector('#footer > div');
     if (footer && !footer.querySelector('.footer-copyright')) {
       const copyright = document.createElement('p');
@@ -405,7 +445,7 @@
       footer.append(copyright);
     }
     document.querySelectorAll('[data-content-back]').forEach(link => {
-      link.href = safeReturn(new URLSearchParams(location.search).get('from'), link.getAttribute('href'));
+      link.href = returnTarget(link.getAttribute('href'));
     });
     catalog = document.querySelector('[data-content-catalog]');
     catalogIndex = catalog?.dataset.catalogIndex;
@@ -454,13 +494,16 @@
   }
   // Mintlify links retain compiled hrefs. Use ordinary navigation for dynamic
   // return URLs and explicit list resets, while retaining modified-click behavior.
+  const prepareClickedLink = event => {
+    const link = event.target.closest('a[href]');
+    if (link) link.href = navigationTarget(link).href;
+  };
+  ['click', 'auxclick', 'contextmenu'].forEach(type => document.addEventListener(type, prepareClickedLink, true));
   document.addEventListener('click', event => {
     const link = event.target.closest('.content-link, [data-content-back], [data-catalog-page], a[href="/cases/list"], a[href="/news/list"]');
     if (!link || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     if (link.getAttribute('aria-disabled') === 'true') { event.preventDefault(); event.stopImmediatePropagation(); return; }
-    const target = new URL(link.href);
-    if (link.matches('.content-link')) target.searchParams.set('from', location.pathname + location.search);
-    else if (link.matches('[data-content-back]')) target.href = new URL(safeReturn(new URLSearchParams(location.search).get('from'), target.pathname), location.origin).href;
+    const target = navigationTarget(link);
     if (target.origin !== location.origin) return;
     event.preventDefault(); event.stopImmediatePropagation();
     location.assign(target.pathname + target.search + target.hash);
