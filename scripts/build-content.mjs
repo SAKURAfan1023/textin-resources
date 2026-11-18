@@ -57,11 +57,23 @@ async function readArticle(directory, file, siteUrl, validate) {
   if (document.errors.length) throw new Error(`${file}: ${document.errors[0].message}`);
   const data = document.toJS();
   if (!Object.hasOwn(data || {}, 'listing')) return null;
+  const date = typeof data.listing?.date === 'string' && data.listing.date.trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (date) {
+    const normalized = `${date[1]}-${date[2].padStart(2, '0')}-${date[3].padStart(2, '0')}`;
+    if (normalized !== data.listing.date) {
+      data.listing.date = normalized;
+      document.setIn(['listing', 'date'], normalized);
+    }
+  }
   for (const field of ['cover', 'customerLogo']) {
     const value = data.listing?.[field];
-    if (typeof value === 'string' && !value.startsWith('/')) {
-      data.listing[field] = `/${value}`;
-      document.setIn(['listing', field], data.listing[field]);
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      const normalized = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+      if (normalized !== value) {
+        data.listing[field] = normalized;
+        document.setIn(['listing', field], normalized);
+      }
     }
   }
   if (!validate(data.listing)) throw new Error(`${file}: listing ${validate.errors.map(error => `${error.instancePath} ${error.message}`).join('; ')}`);

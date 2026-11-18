@@ -93,16 +93,16 @@ test('content publishing preserves both self-closing and paired footer Cards aft
   }
 });
 
-test('uploaded image formats and filenames work without renaming and missing leading slashes are saved automatically', async t => {
+test('uploaded images normalize surrounding whitespace and leading slashes while preserving formats and filenames', async t => {
   const { directory, catalog, save, article } = await fixture(t);
   const logo = 'images/客户 Logo.PNG';
   await writeFile(path.join(directory, logo), 'uploaded logo');
   await writeFile(path.join(directory, 'cases/customer.mdx'), article);
-  catalog.cases.push({ page: 'cases/customer', date: '2026-10-23', industry: 'Manufacturing', scenarios: ['Document structuring'], product: 'xParse', cover: '/images/cover.webp', customerLogo: logo, customer: 'Customer', metric: { value: '60%', label: 'verified improvement' }, homeOrder: 10 });
+  catalog.cases.push({ page: 'cases/customer', date: '2026-10-23', industry: 'Manufacturing', scenarios: ['Document structuring'], product: 'xParse', cover: ' /images/cover.webp ', customerLogo: ` \t${logo} \t`, customer: 'Customer', metric: { value: '60%', label: 'verified improvement' }, homeOrder: 10 });
   for (const extension of ['PNG', 'gif', 'avif']) {
     const cover = `images/Exam Paper 解析.${extension}`;
     await writeFile(path.join(directory, cover), 'uploaded cover');
-    catalog.news[0].cover = extension === 'gif' ? `/${cover}` : cover;
+    catalog.news[0].cover = extension === 'gif' ? ` \t/${cover} \t` : ` ${cover} `;
     await save();
     await buildContent(directory);
     const url = '/' + cover.split('/').map(encodeURIComponent).join('/');
@@ -115,6 +115,26 @@ test('uploaded image formats and filenames work without renaming and missing lea
     assert.equal(parseDocument(customer.match(/^---\n([\s\S]*?)\n---\n/)[1]).getIn(['listing', 'customerLogo']), `/${logo}`);
     assert.ok((await read(directory, 'cases/list.mdx')).includes('src="/images/%E5%AE%A2%E6%88%B7%20Logo.PNG"'));
     assert.deepEqual((await buildContent(directory, { check: true })).changed, []);
+  }
+});
+
+test('operator dates are padded automatically while impossible dates still fail before changing outputs', async t => {
+  const { directory, catalog, save } = await fixture(t);
+  for (const [input, expected] of [['2026-1-3', '2026-01-03'], [' 2026-11-3 ', '2026-11-03'], ['2026-1-23', '2026-01-23']]) {
+    catalog.news[0].date = input;
+    await save();
+    await buildContent(directory);
+    const source = await read(directory, 'news/new-article.mdx');
+    assert.equal(parseDocument(source.match(/^---\n([\s\S]*?)\n---\n/)[1]).getIn(['listing', 'date']), expected);
+    for (const file of ['news/list.mdx', 'index.mdx']) assert.ok((await read(directory, file)).includes(`data-date="${expected}"`));
+    assert.deepEqual((await buildContent(directory, { check: true })).changed, []);
+  }
+  const baseline = await read(directory, 'news/list.mdx');
+  for (const input of ['2026-2-30', '2026-13-3', '2026-0-1']) {
+    catalog.news[0].date = input;
+    await save();
+    await assert.rejects(buildContent(directory), /listing.*date/);
+    assert.equal(await read(directory, 'news/list.mdx'), baseline);
   }
 });
 
