@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, writeFile, cp, rm, readdir } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, cp, rm, readdir, rename } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -56,6 +56,108 @@ test('new operator entry generates static list, home, navigation and native arti
   assert.match(article, /<Card title="Put document AI to work\."/);
   assert.doesNotMatch(article, /<time|<div|<section|<select/);
   assert.deepEqual((await buildContent(directory)).changed, []);
+});
+
+test('console-created root pages move into their navigation category and regenerate from a single MDX', async t => {
+  const { directory, catalog, save, article } = await fixture(t);
+  await writeFile(path.join(directory, 'cases/customer.mdx'), article);
+  catalog.cases.push({ page: 'cases/customer', date: '2026-10-23', industry: 'Manufacturing', scenarios: ['Document structuring'], product: 'xParse', cover: '/images/cover.webp', customer: 'Customer', metric: { value: '60%', label: 'verified improvement' }, homeOrder: 10 });
+  await save();
+  await rename(path.join(directory, 'news/new-article.mdx'), path.join(directory, 'new-article.mdx'));
+  await rename(path.join(directory, 'cases/customer.mdx'), path.join(directory, 'customer.mdx'));
+  const docs = JSON.parse(await read(directory, 'docs.json'));
+  docs.navigation.groups[1].pages = ['new-article'];
+  docs.navigation.groups[2].pages = [{ group: 'Customers', pages: ['customer'] }];
+  await writeFile(path.join(directory, 'docs.json'), JSON.stringify(docs));
+  await assert.rejects(buildContent(directory, { check: true }), /out of date/);
+  assert.match(await read(directory, 'new-article.mdx'), /Keep this body unchanged/);
+  await assert.rejects(read(directory, 'news/new-article.mdx'), { code: 'ENOENT' });
+  const result = await buildContent(directory);
+  assert.equal(result.count, 2);
+  for (const [kind, slug] of [['news', 'new-article'], ['cases', 'customer']]) {
+    assert.ok(result.changed.includes(`${slug}.mdx`));
+    await assert.rejects(read(directory, `${slug}.mdx`), { code: 'ENOENT' });
+    assert.match(await read(directory, `${kind}/${slug}.mdx`), /Keep this body unchanged/);
+    assert.match(await read(directory, `${kind}/${slug}.mdx`), /mode: center/);
+    for (const file of [`${kind}/list.mdx`, 'index.mdx']) assert.ok((await read(directory, file)).includes(`href="/${kind}/${slug}"`));
+  }
+  const navigation = JSON.parse(await read(directory, 'docs.json')).navigation.groups;
+  assert.deepEqual(navigation[1].pages, ['news/new-article']);
+  assert.deepEqual(navigation[2].pages, ['cases/customer']);
+  assert.deepEqual((await buildContent(directory, { check: true })).changed, []);
+});
+
+test('valid Path changes keep the requested filename and refresh article and list links', async t => {
+  const { directory } = await fixture(t);
+  await buildContent(directory);
+  await rename(path.join(directory, 'news/new-article.mdx'), path.join(directory, 'news/renamed.mdx'));
+  const docs = JSON.parse(await read(directory, 'docs.json'));
+  docs.navigation.groups[1].pages = ['news/renamed'];
+  await writeFile(path.join(directory, 'docs.json'), JSON.stringify(docs));
+  await buildContent(directory);
+  for (const file of ['index.mdx', 'news/list.mdx']) {
+    assert.match(await read(directory, file), /href="\/news\/renamed"/);
+    assert.doesNotMatch(await read(directory, file), /news\/new-article/);
+  }
+  assert.match(await read(directory, 'news/renamed.mdx'), /Keep this body unchanged/);
+  assert.deepEqual((await buildContent(directory, { check: true })).changed, []);
+});
+
+test('a Path saved without its corresponding MDX fails before navigation or lists can silently drop it', async t => {
+  const { directory } = await fixture(t);
+  await buildContent(directory);
+  const malformed = 'path.new-article.new-article';
+  await rename(path.join(directory, 'news/new-article.mdx'), path.join(directory, malformed));
+  const docs = JSON.parse(await read(directory, 'docs.json'));
+  docs.navigation.groups[1].pages = ['news/20261118'];
+  await writeFile(path.join(directory, 'docs.json'), JSON.stringify(docs));
+  const baseline = await Promise.all(['docs.json', 'index.mdx', 'news/list.mdx', malformed].map(file => read(directory, file)));
+  await assert.rejects(buildContent(directory), /Path news\/20261118 does not match an existing file: news\/20261118\.mdx/);
+  assert.deepEqual(await Promise.all(['docs.json', 'index.mdx', 'news/list.mdx', malformed].map(file => read(directory, file))), baseline);
+  await rename(path.join(directory, malformed), path.join(directory, 'news/20261118.mdx'));
+  await buildContent(directory);
+  assert.match(await read(directory, 'news/list.mdx'), /href="\/news\/20261118"/);
+  assert.deepEqual((await buildContent(directory, { check: true })).changed, []);
+});
+
+test('root imports never overwrite an existing article or move files before validation succeeds', async t => {
+  const { directory, article } = await fixture(t);
+  await buildContent(directory);
+  const baseline = await read(directory, 'news/list.mdx');
+  const source = await read(directory, 'news/new-article.mdx');
+  await writeFile(path.join(directory, 'new-article.mdx'), source);
+  const docs = JSON.parse(await read(directory, 'docs.json'));
+  docs.navigation.groups[1].pages = ['new-article'];
+  await writeFile(path.join(directory, 'docs.json'), JSON.stringify(docs));
+  await assert.rejects(buildContent(directory), /news\/new-article.mdx already exists/);
+  assert.equal(await read(directory, 'news/new-article.mdx'), source);
+  await rm(path.join(directory, 'news/new-article.mdx'));
+  for (const invalid of [source.replace('date: 2026-10-23', 'date: invalid'), article]) {
+    await writeFile(path.join(directory, 'new-article.mdx'), invalid);
+    await assert.rejects(buildContent(directory), /listing/);
+    assert.equal(await read(directory, 'new-article.mdx'), invalid);
+    assert.equal(await read(directory, 'news/list.mdx'), baseline);
+    assert.equal(await read(directory, 'docs.json'), JSON.stringify(docs));
+    await assert.rejects(read(directory, 'news/new-article.mdx'), { code: 'ENOENT' });
+  }
+});
+
+test('watching a newly saved root MDX imports it and refreshes its list', { timeout: 10000 }, async t => {
+  const { directory } = await fixture(t);
+  await buildContent(directory);
+  const source = await read(directory, 'news/new-article.mdx');
+  const docs = JSON.parse(await read(directory, 'docs.json'));
+  docs.navigation.groups[1].pages.push('saved-page');
+  await writeFile(path.join(directory, 'docs.json'), JSON.stringify(docs));
+  let onReport = () => {};
+  const close = watchContent(directory, (error, result) => onReport(error, result));
+  try {
+    const refreshed = new Promise((resolve, reject) => { onReport = (error, result) => { if (error) reject(error); else if (result.changed.includes('news/saved-page.mdx')) resolve(result); }; });
+    await writeFile(path.join(directory, 'saved-page.mdx'), source);
+    assert.equal((await refreshed).count, 2);
+    assert.match(await read(directory, 'news/list.mdx'), /href="\/news\/saved-page"/);
+    await assert.rejects(read(directory, 'saved-page.mdx'), { code: 'ENOENT' });
+  } finally { await close(); }
 });
 
 test('editing the native title updates both lists without replacing authored content', async t => {

@@ -49,8 +49,8 @@ function pagination(kind, page, total) {
   return `<div role="navigation" className="catalog-pagination" aria-label="${kind === 'news' ? 'Blog' : 'Case Studies'} pagination" data-catalog-pagination${pages === 1 ? ' hidden' : ''}><p data-page-range>${total ? (page - 1) * pageSize + 1 : 0}–${Math.min(page * pageSize, total)} of ${total}</p><div>${link('Previous', page - 1, 'previous')}${Array.from({ length: pages }, (_, index) => link(String(index + 1), index + 1, String(index + 1))).join('')}${link('Next', page + 1, 'next')}</div></div>`;
 }
 
-async function readArticle(directory, file, siteUrl, validate) {
-  const source = await readFile(path.join(directory, file), 'utf8');
+async function readArticle(directory, file, siteUrl, validate, sourceFile = file) {
+  const source = await readFile(path.join(directory, sourceFile), 'utf8');
   const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
   if (!match) throw new Error(`${file}: missing page frontmatter.`);
   const document = parseDocument(match[1]);
@@ -155,10 +155,33 @@ export async function buildContent(directory = root, { check = false } = {}) {
   const validateSite = ajv.compile({ ...schema, $ref: '#/definitions/site' });
   if (!validateSite(settings)) throw new Error(`content/site.json: ${ajv.errorsText(validateSite.errors)}`);
   const articles = {};
+  const imported = [];
   for (const kind of ['news', 'cases']) {
+    const label = kind === 'news' ? 'Blog' : 'Case Studies';
+    const group = groups.find(item => item.group === label);
+    if (!group) throw new Error(`docs.json: missing ${label} navigation group.`);
+    const files = new Map((await readdir(path.join(directory, kind))).filter(file => file.endsWith('.mdx') && file !== 'list.mdx' && !drafts.has(`${kind}/${file.slice(0, -4)}`)).map(file => [`${kind}/${file}`, `${kind}/${file}`]));
+    const collectPages = pages => pages.flatMap(page => typeof page === 'string' ? [page] : collectPages(page.pages || []));
+    for (const page of collectPages(group.pages || [])) {
+      if (!new RegExp(`^(?:${kind}/)?[a-zA-Z0-9][a-zA-Z0-9_-]*$`).test(page) || [listPath(kind, 1).slice(1), 'list', 'index'].includes(page)) throw new Error(`${label}: invalid article path: ${page}`);
+      const sourceFile = `${page}.mdx`;
+      try { await access(path.join(directory, sourceFile)); }
+      catch { throw new Error(`${label}: Path ${page} does not match an existing file: ${sourceFile}. Check Files and Page settings before publishing; navigation has been preserved.`); }
+      const file = page.startsWith(`${kind}/`) ? sourceFile : `${kind}/${sourceFile}`;
+      if (drafts.has(file.slice(0, -4))) continue;
+      if (sourceFile !== file) {
+        if (files.has(file)) throw new Error(`${label}: cannot move ${sourceFile}: ${file} already exists.`);
+        if (imported.includes(sourceFile)) throw new Error(`${sourceFile}: keep a new page in either Blog or Case Studies, not both.`);
+        files.set(file, sourceFile);
+        imported.push(sourceFile);
+      }
+    }
     const validate = ajv.compile({ ...schema, $ref: `#/definitions/${kind === 'news' ? 'news' : 'story'}` });
-    const files = (await readdir(path.join(directory, kind))).filter(file => file.endsWith('.mdx') && file !== 'list.mdx' && !drafts.has(`${kind}/${file.slice(0, -4)}`));
-    articles[kind] = (await Promise.all(files.map(file => readArticle(directory, `${kind}/${file}`, settings.siteUrl, validate)))).filter(Boolean);
+    articles[kind] = (await Promise.all([...files].map(async ([file, sourceFile]) => {
+      const article = await readArticle(directory, file, settings.siteUrl, validate, sourceFile);
+      if (!article && sourceFile !== file) throw new Error(`${sourceFile}: add listing configuration before publishing.`);
+      return article;
+    }))).filter(Boolean);
     articles[kind].sort((a, b) => (a.item.order ?? 0) - (b.item.order ?? 0) || b.item.date.localeCompare(a.item.date) || a.item.page.localeCompare(b.item.page));
     if (articles[kind].filter(article => article.item.featured).length > 1) throw new Error(`${kind}: only one article can have featured: true.`);
   }
@@ -207,7 +230,7 @@ export async function buildContent(directory = root, { check = false } = {}) {
     if (original !== source) changed.push(file);
   }
   const stale = (await Promise.all(['news', 'cases'].map(async kind => (await readdir(path.join(directory, `${kind}/list`)).catch(() => [])).filter(file => /^\d+\.mdx$/.test(file) && !output.has(`${kind}/list/${file}`)).map(file => `${kind}/list/${file}`)))).flat();
-  if (check && (changed.length || stale.length)) throw new Error(`Generated content is out of date. Run npm run content:build.\n${[...changed, ...stale].join('\n')}`);
+  if (check && (changed.length || stale.length || imported.length)) throw new Error(`Generated content is out of date. Run npm run content:build.\n${[...changed, ...stale, ...imported].join('\n')}`);
   // Resolve and validate every input before changing any output.
   if (!check) {
     for (const file of changed) {
@@ -215,8 +238,9 @@ export async function buildContent(directory = root, { check = false } = {}) {
       await writeFile(path.join(directory, file), output.get(file));
     }
     for (const file of stale) await unlink(path.join(directory, file));
+    for (const file of imported) await unlink(path.join(directory, file));
   }
-  return { changed: [...changed, ...stale], count: articles.news.length + articles.cases.length };
+  return { changed: [...changed, ...stale, ...imported], count: articles.news.length + articles.cases.length };
 }
 
 export function watchContent(directory, report) {
@@ -244,7 +268,8 @@ export function watchContent(directory, report) {
     timer = setTimeout(rebuild, 150);
   }));
   watchers.push(watch(directory, (_, filename) => {
-    if (String(filename) !== 'docs.json') return;
+    const file = String(filename);
+    if (file !== 'docs.json' && !file.endsWith('.mdx')) return;
     clearTimeout(timer);
     timer = setTimeout(rebuild, 150);
   }));

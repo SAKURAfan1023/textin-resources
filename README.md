@@ -46,12 +46,12 @@ Blog 自动进入 **Latest from the Blog**，案例进入 **Case Studies**，两
 ## 3. 新增文章
 
 1. 右上角 **… → Branches（分支）**，新建内容分支，例如 `content/new-customer`。
-2. 点击 **New page（新建页面）**；在 **… → Page settings（页面设置）→ Path（网址路径）** 填写 `cases/英文短名称` 或 `news/英文短名称`。
+2. 在 **Blog** 或 **Case Studies** 分组中新建页面，保留系统生成的英文短名称。提交到内容分支后，自动化会按分组补齐 `news/` 或 `cases/` 目录，保留原英文名称，不改成日期或编号；需要指定名称时，在 **… → Page settings → Path** 一次填写 `news/英文短名称` 或 `cases/英文短名称`。
 3. 打开 **… → Source mode（源码模式）**，用下方对应模板替换初始内容。页头只保留一组 `---`，第二条 `---` 后填写英文正文。
 4. 上传封面和已确认的客户 Logo，将模板中的示例客户、日期、图片路径及成果替换为真实内容；没有 Logo 时删除 `customerLogo` 一行。
 5. **Publish（发布）→ Save in branch（保存到分支）**，保存到第 1 步的内容分支；按第 8 节检查自动生成和预览，通过后再合并发布。
 
-保存后在 Files 确认文章位于 `news/英文短名称.mdx` 或 `cases/英文短名称.mdx`；导航名称不决定实际文件路径。
+等待自动生成完成，再在 Files 确认文章位于 `news/英文短名称.mdx` 或 `cases/英文短名称.mdx`，然后继续编辑。导航显示名称不决定文件路径。文件失配时自动化会明确报错，交给开发核对，不会猜测对应文章或覆盖文件。
 
 ### Case Studies 模板
 
@@ -272,6 +272,7 @@ listing: # 首页与列表配置
 | 想恢复已下架文章 | 从 Draft 拖回原 Blog 或 Case Studies 分组，按发布流程完成部署 |
 | 调整首页顺序却影响了列表 | 首页只改 `homeOrder`；列表使用 `order` |
 | 新文章不在列表 | 检查完整 `listing`、自动生成和最新预览是否成功 |
+| 提示 `Path … does not match an existing file` | 路径与 Git 文件不一致，交给开发核对文件移动与导航记录 |
 | 保存后页面没变 | 确认已提交分支，等待 Content publishing 与预览构建完成 |
 | 想取消推荐大卡 | 改为 `featured: false` |
 | 页头校验失败 | Actions → Content publishing → validate，按文章路径与字段修正 |
@@ -292,6 +293,8 @@ npm run preview
 预览：[localhost:3001](http://localhost:3001)。保存 MDX 后自动校验、生成并刷新；错误配置保留上次生成结果，修正后自动恢复。已有预览时可单独运行 `npm run content:watch`；一次性生成使用 `npm run content:build`。
 
 `content/site.json` 仅保存站点域名，`content/schema.json` 定义校验规则，均由开发维护。文章配置与正文保存在自身 MDX，不另设文章清单。
+
+Blog、Case Studies 导航中新建的根目录 MDX，按分组自动移入 `news/`、`cases/` 并同步导航。全部校验通过后才写入和删除原文件，重名时停止。导航引用的 MDX 不存在时停止生成，保留原导航与列表。Action 同时监听根目录 MDX，写回时包含移入文件及原文件删除；未加入这两个分组的根目录文件不会自动导入。
 
 草稿状态取自 `docs.json` 顶层 **Draft** 导航分组（包含其子分组），构建时排除对应文章，并维护跳到所属列表的临时重定向（`permanent: false`），恢复时移除。文章路径到自身列表的临时重定向由此流程专用，不手动配置。导航变化也会触发本地预览刷新和 Content publishing。
 
