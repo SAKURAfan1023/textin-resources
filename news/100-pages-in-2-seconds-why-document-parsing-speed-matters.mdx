@@ -24,16 +24,45 @@ slug: false
 ---
 
 {/* content:metadata:start */}
+
 [Back to Blog](/news/list)
 
 Technical · xParse · Nov 18, 2026
+
 {/* content:metadata:end */}
 
 TextIn xParse delivers high-speed document processing through proprietary parsing-speed optimizations, **parsing 100-page documents in about 2 seconds.**
 
-|  | P50 (100 pages) | P90 (100 pages) | P95 (100 pages) | P99 (100 pages) | Average (per page) |
-| :-- | --: | --: | --: | --: | --: |
-| **TextIn** | **1.46s** | **1.75s** | **2.07s** | **2.62s** | **0.015s** |
+<table>
+  <colgroup>
+    <col width="82" />
+    <col width="146" />
+    <col width="146" />
+    <col width="146" />
+    <col width="146" />
+    <col width="167" />
+  </colgroup>
+  <thead>
+    <tr>
+      <th></th>
+      <th style={{ textAlign: "right" }}>P50 (100 pages)</th>
+      <th style={{ textAlign: "right" }}>P90 (100 pages)</th>
+      <th style={{ textAlign: "right" }}>P95 (100 pages)</th>
+      <th style={{ textAlign: "right" }}>P99 (100 pages)</th>
+      <th style={{ textAlign: "right" }}>Average (per page)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>**TextIn**</td>
+      <td style={{ textAlign: "right" }}>**1.46s**</td>
+      <td style={{ textAlign: "right" }}>**1.75s**</td>
+      <td style={{ textAlign: "right" }}>**2.07s**</td>
+      <td style={{ textAlign: "right" }}>**2.62s**</td>
+      <td style={{ textAlign: "right" }}>**0.015s**</td>
+    </tr>
+  </tbody>
+</table>
 
 P50 represents the median response time. This means that half of all test samples have a response time below the P50 value, while the other half have a response time above it. Similarly, P90 represents the 90th percentile response time. In this performance test, this means that 90% of document parsing operations were completed within 1.75 seconds, reflecting the experience of most users.
 
