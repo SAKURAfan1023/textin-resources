@@ -9,14 +9,15 @@
 | 修改 Blog | Navigation（导航）→ Blog → 对应文章 | 正文直接编辑；配置打开 `… → Source mode（源码模式）` |
 | 修改案例 | Navigation（导航）→ Case Studies → 对应客户 | 同上 |
 | 修改标题、摘要 | 当前文章 → `… → Source mode（源码模式）` | 页头的 `title`、`description`，同步首页、列表和详情 |
+| 设置文章短网址 | 当前文章 → 源码模式 | 页头的 `slug`，不填或 `false` 时按标题自动生成 |
 | 选入首页、撤下、排序 | 当前文章 → 源码模式 | `listing.homeOrder` |
 | 修改封面、日期、分类、客户与 Point | 当前文章 → 源码模式 | `listing` 区域 |
 | 下架文章、恢复发布 | Navigation（导航） | 拖入 **Draft** 下架；拖回 **Blog** 或 **Case Studies** 恢复 |
 | 上传图片 | Files（文件）→ `images/` | 上传后将路径填入当前文章 |
 
-标题、摘要与列表配置统一在源码模式填写；页面设置仅在新增文章时用于设置网址路径，无需重复填写内容。
+标题、摘要、网址与列表配置统一在源码模式填写。`slug` 留空、省略或为 `false` 时，脚本按 `title` 生成英文路径；标题过长时填写短名，例如 `slug: parsing-speed`。无需单独修改 **Page settings → Path**。
 
-文章路径就是文件位置，例如 `cases/acme-contract-review.mdx` 对应 `/cases/acme-contract-review`。已上线文章保留原路径。
+文章路径就是文件位置，例如 `cases/acme-contract-review.mdx` 对应 `/cases/acme-contract-review`。自动化根据 `title` 或 `slug` 重命名文件，并补齐 `news/`、`cases/` 前缀；导航、首页、列表和站内文章链接同步更新，旧网址保留跳转。
 
 ## 2. 决定 Resources 首页展示什么
 
@@ -46,12 +47,22 @@ Blog 自动进入 **Latest from the Blog**，案例进入 **Case Studies**，两
 ## 3. 新增文章
 
 1. 右上角 **… → Branches（分支）**，新建内容分支，例如 `content/new-customer`。
-2. 在 **Blog** 或 **Case Studies** 分组中新建页面，保留系统生成的英文短名称。提交到内容分支后，自动化会按分组补齐 `news/` 或 `cases/` 目录，保留原英文名称，不改成日期或编号；需要指定名称时，在 **… → Page settings → Path** 一次填写 `news/英文短名称` 或 `cases/英文短名称`。
+2. 在 **Blog** 或 **Case Studies** 分组中新建页面，无需填写 Path；自动化按所属分组补齐 `news/` 或 `cases/`。
 3. 打开 **… → Source mode（源码模式）**，用下方对应模板替换初始内容。页头只保留一组 `---`，第二条 `---` 后填写英文正文。
 4. 上传封面和已确认的客户 Logo，将模板中的示例客户、日期、图片路径及成果替换为真实内容；没有 Logo 时删除 `customerLogo` 一行。
 5. **Publish（发布）→ Save in branch（保存到分支）**，保存到第 1 步的内容分支；按第 8 节检查自动生成和预览，通过后再合并发布。
 
 等待自动生成完成，再在 Files 确认文章位于 `news/英文短名称.mdx` 或 `cases/英文短名称.mdx`，然后继续编辑。导航显示名称不决定文件路径。文件失配时自动化会明确报错，交给开发核对，不会猜测对应文章或覆盖文件。
+
+例如标题为 `100 Pages in 2 Seconds: Why Document Parsing Speed Matters`：
+
+| 页头配置 | 最终 Blog 网址 | 以后改标题 |
+| --- | --- | --- |
+| `slug: false`，或留空、省略 | `/news/100-pages-in-2-seconds-why-document-parsing-speed-matters` | 自动生成新网址，旧网址跳转到新网址 |
+| `slug: parsing-speed` | `/news/parsing-speed` | 保留短网址 |
+| `slug: news/parsing-speed` 或 `/news/parsing-speed` | `/news/parsing-speed` | 同上，已有前缀不会重复添加 |
+
+Case Studies 同理，前缀为 `cases/`。短名使用英文字母、数字、连字符或下划线。两篇文章生成相同网址时，需要为其中一篇填写不同的 `slug`，不会覆盖已有文件。把短名改回 `false` 即恢复按标题生成。
 
 ### Case Studies 模板
 
@@ -60,6 +71,7 @@ Blog 自动进入 **Latest from the Blog**，案例进入 **Case Studies**，两
 ```mdx
 ---
 title: "How Acme makes contract review traceable" # 文章标题：首页、列表、详情共用
+slug: false # 留空或 false 按标题生成网址；需要短网址时改为 acme-contract-review
 description: "How Acme connects extracted clauses to their source documents." # 摘要：首页、列表及详情页描述
 keywords: # SEO 关键词，不参与列表筛选
   - contract analysis
@@ -107,6 +119,7 @@ listing: # 首页与列表配置
 ```yaml
 ---
 title: "Your article title" # 文章标题：首页、列表、详情共用
+slug: false # 留空或 false 按标题生成网址；需要短网址时改为 parsing-speed
 description: "A short summary of the article." # 摘要：首页、列表及详情页描述
 keywords: # SEO 关键词，不参与列表筛选
   - document intelligence
@@ -184,7 +197,7 @@ listing: # 首页与列表配置
 
 ## 6. 其他配置
 
-下表字段位于 `listing` 内，`keywords` 除外。
+下表字段位于 `listing` 内，`slug`、`keywords` 除外。
 
 | 字段 | 结果或规则 |
 | --- | --- |
@@ -195,6 +208,7 @@ listing: # 首页与列表配置
 | `cover` / `customerLogo` | 首页与列表的封面、客户 Logo；不替换正文图片 |
 | `metric.value` / `metric.label` | 重点 Point 和说明，均必填，须有事实支撑 |
 | `readMinutes` | Blog 阅读分钟数，填正整数 |
+| `slug` | 文章页头短名；留空或 `false` 按标题生成，填写短名则优先采用并自动补前缀 |
 | `keywords` | 文章页头关键词，用于 SEO，不新增筛选项 |
 | 删除整个 `listing` | 仅移除首页、列表与文章导航，原网址仍可访问；文章下架使用 Draft，不删除配置 |
 
@@ -242,8 +256,8 @@ listing: # 首页与列表配置
 | 操作 | 自动生成与部署完成后的结果 |
 | --- | --- |
 | 将文章拖入 Draft | 从首页、列表、筛选索引和公开文章导航移除；原网址临时跳转到对应列表，不再打开文章正文 |
-| 在 Draft 中编辑 | 保留原文件、配置与图片；列表配置可暂时不完整，MDX 语法仍须正确 |
-| 案例拖回 Case Studies，Blog 拖回 Blog | 按原 `listing` 恢复展示，原网址不变；配置不完整时须补齐后才能发布 |
+| 在 Draft 中编辑 | 保留原文件、配置与图片；列表配置可暂时不完整。标题与 `slug` 引起的网址更改在恢复发布时生效 |
+| 案例拖回 Case Studies，Blog 拖回 Blog | 按 `listing` 恢复展示，并根据当前 `title`、`slug` 确定网址；网址有变化时旧网址跳转到新网址 |
 
 不需要移动 Files 中的实际文件，也不用增加草稿字段。恢复后是否进入首页仍由 `homeOrder` 决定，列表顺序仍由 `order` 决定。其他文章中手工添加的旧链接会跳到列表，可按需要调整。
 
@@ -274,6 +288,8 @@ listing: # 首页与列表配置
 | 新文章不在列表 | 检查完整 `listing`、自动生成和最新预览是否成功 |
 | 提示 `Path … does not match an existing file` | 路径与 Git 文件不一致，交给开发核对文件移动与导航记录 |
 | 保存后页面没变 | 确认已提交分支，等待 Content publishing 与预览构建完成 |
+| 想缩短文章网址 | 填写页头 `slug: 短名`，不要单独改控制台 Path |
+| 提示 duplicate article path 或 cannot overwrite | 两篇文章网址重名，为其中一篇设置不同的 `slug` |
 | 想取消推荐大卡 | 改为 `featured: false` |
 | 页头校验失败 | Actions → Content publishing → validate，按文章路径与字段修正 |
 | 提示 `could not be rendered` | 切 Source mode（源码模式）检查非官方标签；自动生成区域问题交给开发 |
@@ -294,7 +310,7 @@ npm run preview
 
 `content/site.json` 仅保存站点域名，`content/schema.json` 定义校验规则，均由开发维护。文章配置与正文保存在自身 MDX，不另设文章清单。
 
-Blog、Case Studies 导航中新建的根目录 MDX，按分组自动移入 `news/`、`cases/` 并同步导航。全部校验通过后才写入和删除原文件，重名时停止。导航引用的 MDX 不存在时停止生成，保留原导航与列表。Action 同时监听根目录 MDX，写回时包含移入文件及原文件删除；未加入这两个分组的根目录文件不会自动导入。
+Blog、Case Studies 导航中新建的根目录 MDX，按分组自动移入 `news/`、`cases/`。文章名称取自非空 `slug`，否则由 `title` 转小写、空格与标点转连字符生成；同时更新导航、文章链接和旧网址永久跳转。已有跳转直接更新到最新网址，切回曾用网址时移除冲突跳转。无需 Git 历史或另设清单。全部校验通过后才写入新文件并删除原文件，重名时停止。导航引用的 MDX 不存在时停止生成，保留原导航与列表。Action 同时监听根目录 MDX，写回时包含移入文件及原文件删除；未加入这两个分组的根目录文件不会自动导入。
 
 草稿状态取自 `docs.json` 顶层 **Draft** 导航分组（包含其子分组），构建时排除对应文章，并维护跳到所属列表的临时重定向（`permanent: false`），恢复时移除。文章路径到自身列表的临时重定向由此流程专用，不手动配置。导航变化也会触发本地预览刷新和 Content publishing。
 

@@ -32,6 +32,7 @@ async function fixture(t) {
         if (index >= 0) {
           const { page, ...listing } = catalog[kind][index];
           document.set('listing', { homeOrder: false, order: (index + 1) * 10, ...listing });
+          document.set('slug', page.split('/')[1]);
         } else document.delete('listing');
         await writeFile(path.join(directory, file), `---\n${document.toString({ lineWidth: 0 })}---\n${source.slice(match[0].length)}`);
       }
@@ -87,20 +88,182 @@ test('console-created root pages move into their navigation category and regener
   assert.deepEqual((await buildContent(directory, { check: true })).changed, []);
 });
 
-test('valid Path changes keep the requested filename and refresh article and list links', async t => {
+test('empty slug generates the article filename from its title and follows later title edits', async t => {
+  for (const kind of ['news', 'cases']) {
+    for (const setting of ['', 'slug: false\n', 'slug:\n', 'slug: ""\n', 'slug: "  "\n']) {
+      const { directory, catalog, save, article } = await fixture(t);
+      if (kind === 'cases') {
+        await writeFile(path.join(directory, 'cases/customer.mdx'), article);
+        catalog.cases.push({ page: 'cases/customer', date: '2026-10-23', industry: 'Manufacturing', scenarios: ['Document structuring'], product: 'xParse', cover: '/images/cover.webp', customer: 'Customer', metric: { value: '60%', label: 'verified improvement' }, homeOrder: 10 });
+        await save();
+      }
+      const original = kind === 'news' ? 'news/new-article.mdx' : 'cases/customer.mdx';
+      const source = (await read(directory, original)).replace(/^slug:.*\n/m, setting);
+      await rm(path.join(directory, original));
+      await writeFile(path.join(directory, 'new-page.mdx'), source);
+      const docs = JSON.parse(await read(directory, 'docs.json'));
+      docs.navigation.groups.find(group => group.group === (kind === 'news' ? 'Blog' : 'Case Studies')).pages = ['new-page'];
+      await writeFile(path.join(directory, 'docs.json'), JSON.stringify(docs));
+      await assert.rejects(buildContent(directory, { check: true }), /out of date/);
+      assert.equal(await read(directory, 'new-page.mdx'), source);
+      await buildContent(directory);
+      const first = `${kind}/a-new-article`;
+      await assert.rejects(read(directory, 'new-page.mdx'), { code: 'ENOENT' });
+      assert.match(await read(directory, `${first}.mdx`), /title: "A new article"/);
+      for (const file of [`${kind}/list.mdx`, 'index.mdx']) assert.ok((await read(directory, file)).includes(`href="/${first}"`));
+      const updated = (await read(directory, `${first}.mdx`)).replace('A new article', "What's new: Café OCR — fast & precise!");
+      await writeFile(path.join(directory, `${first}.mdx`), updated);
+      await buildContent(directory);
+      const current = `${kind}/whats-new-cafe-ocr-fast-precise`;
+      await assert.rejects(read(directory, `${first}.mdx`), { code: 'ENOENT' });
+      assert.ok((await read(directory, `${kind}/list.mdx`)).includes(`href="/${current}"`));
+      const result = JSON.parse(await read(directory, 'docs.json'));
+      assert.deepEqual(result.navigation.groups.find(group => group.group === (kind === 'news' ? 'Blog' : 'Case Studies')).pages, [current]);
+      assert.ok(result.redirects.some(redirect => redirect.source === `/${first}` && redirect.destination === `/${current}` && redirect.permanent));
+      assert.ok(result.redirects.some(redirect => redirect.source === '/new-page' && redirect.destination === `/${current}` && redirect.permanent));
+      assert.deepEqual((await buildContent(directory, { check: true })).changed, []);
+    }
+  }
+});
+
+test('custom slug takes precedence on first creation, gains its prefix and stays fixed when the title changes', async t => {
+  for (const kind of ['news', 'cases']) {
+    for (const slug of ['short-name', `${kind}/short-name`, `/${kind}/short-name`]) {
+      const { directory, catalog, save, article } = await fixture(t);
+      if (kind === 'cases') {
+        await writeFile(path.join(directory, 'cases/customer.mdx'), article);
+        catalog.cases.push({ page: 'cases/customer', date: '2026-10-23', industry: 'Manufacturing', scenarios: ['Document structuring'], product: 'xParse', cover: '/images/cover.webp', customer: 'Customer', metric: { value: '60%', label: 'verified improvement' }, homeOrder: 10 });
+        await save();
+      }
+      const original = kind === 'news' ? 'news/new-article.mdx' : 'cases/customer.mdx';
+      await writeFile(path.join(directory, original), (await read(directory, original)).replace(/^slug:.*$/m, `slug: "${slug}"`));
+      await rename(path.join(directory, original), path.join(directory, 'new-page.mdx'));
+      const docs = JSON.parse(await read(directory, 'docs.json'));
+      docs.navigation.groups.find(group => group.group === (kind === 'news' ? 'Blog' : 'Case Studies')).pages = ['new-page'];
+      await writeFile(path.join(directory, 'docs.json'), JSON.stringify(docs));
+      await buildContent(directory);
+      const file = `${kind}/short-name.mdx`;
+      await writeFile(path.join(directory, file), (await read(directory, file)).replace('A new article', 'A much longer title'));
+      await buildContent(directory);
+      assert.match(await read(directory, `${kind}/list.mdx`), /A much longer title/);
+      assert.ok((await read(directory, `${kind}/list.mdx`)).includes(`href="/${kind}/short-name"`));
+      assert.deepEqual((await buildContent(directory, { check: true })).changed, []);
+      await writeFile(path.join(directory, file), (await read(directory, file)).replace(/^slug:.*$/m, 'slug: false'));
+      await buildContent(directory);
+      assert.ok((await read(directory, `${kind}/list.mdx`)).includes(`href="/${kind}/a-much-longer-title"`));
+      await assert.rejects(read(directory, file), { code: 'ENOENT' });
+      assert.deepEqual((await buildContent(directory, { check: true })).changed, []);
+    }
+  }
+});
+
+test('editing only slug refreshes navigation, old URL aliases and links in published and Draft content', async t => {
+  for (const kind of ['news', 'cases']) {
+    const { directory, catalog, save, article } = await fixture(t);
+    const previous = `${kind}/new-article`;
+    const current = `${kind}/short-name`;
+    if (kind === 'cases') {
+      await writeFile(path.join(directory, `${previous}.mdx`), article);
+      catalog.cases.push({ page: previous, date: '2026-10-23', industry: 'Manufacturing', scenarios: ['Document structuring'], product: 'xParse', cover: '/images/cover.webp', customer: 'Customer', metric: { value: '60%', label: 'verified improvement' }, homeOrder: 10 });
+      await save();
+    }
+    await buildContent(directory);
+    const links = `\n[Related](/${previous}?ref=article#authored-section)\n<Card title="Related" href="https://resources.example.com/${previous}" />\n[Source](https://www.textin.com/${previous})\n[External](//external.example.com/${previous})\n![Image](/images/${previous}/cover.webp)\n`;
+    await writeFile(path.join(directory, `${previous}.mdx`), (await read(directory, `${previous}.mdx`)).replace(/^slug:.*$/m, 'slug: short-name') + links);
+    await writeFile(path.join(directory, 'news/draft-notes.mdx'), article + links);
+    const docs = JSON.parse(await read(directory, 'docs.json'));
+    docs.navigation.groups.find(group => group.group === 'Draft').pages = ['news/draft-notes'];
+    docs.redirects = [{ source: `/${kind}/20261023120000`, destination: `/${previous}`, permanent: true }];
+    await writeFile(path.join(directory, 'docs.json'), JSON.stringify(docs));
+    await buildContent(directory);
+    for (const file of [`${kind}/list.mdx`, 'index.mdx']) assert.ok((await read(directory, file)).includes(`href="/${current}"`));
+    const updated = JSON.parse(await read(directory, 'docs.json'));
+    assert.deepEqual(updated.navigation.groups.find(group => group.group === (kind === 'news' ? 'Blog' : 'Case Studies')).pages, [current]);
+    assert.ok(updated.redirects.some(redirect => redirect.source === `/${kind}/20261023120000` && redirect.destination === `/${current}` && redirect.permanent));
+    assert.ok(updated.redirects.some(redirect => redirect.source === `/${previous}` && redirect.destination === `/${current}` && redirect.permanent));
+    for (const file of [`${current}.mdx`, 'news/draft-notes.mdx']) {
+      const source = await read(directory, file);
+      assert.ok(source.includes(`[Related](/${current}?ref=article#authored-section)`));
+      assert.ok(source.includes(`href="https://resources.example.com/${current}"`));
+      assert.ok(source.includes(`[Source](https://www.textin.com/${previous})`));
+      assert.ok(source.includes(`[External](//external.example.com/${previous})`));
+      assert.ok(source.includes(`![Image](/images/${previous}/cover.webp)`));
+    }
+    assert.deepEqual((await buildContent(directory, { check: true })).changed, []);
+  }
+});
+
+test('invalid or duplicate slugs leave source files, navigation and generated pages untouched', async t => {
   const { directory } = await fixture(t);
   await buildContent(directory);
-  await rename(path.join(directory, 'news/new-article.mdx'), path.join(directory, 'news/renamed.mdx'));
-  const docs = JSON.parse(await read(directory, 'docs.json'));
-  docs.navigation.groups[1].pages = ['news/renamed'];
-  await writeFile(path.join(directory, 'docs.json'), JSON.stringify(docs));
-  await buildContent(directory);
-  for (const file of ['index.mdx', 'news/list.mdx']) {
-    assert.match(await read(directory, file), /href="\/news\/renamed"/);
-    assert.doesNotMatch(await read(directory, file), /news\/new-article/);
+  const original = await read(directory, 'news/new-article.mdx');
+  const baseline = await Promise.all(['docs.json', 'index.mdx', 'news/list.mdx'].map(file => read(directory, file)));
+  for (const slug of ['true', '[]', '{}', 'list', 'index', '../outside', '"https://example.com/page"']) {
+    const edited = original.replace(/^slug:.*$/m, `slug: ${slug}`);
+    await writeFile(path.join(directory, 'news/new-article.mdx'), edited);
+    await assert.rejects(buildContent(directory), /slug|short name/);
+    assert.equal(await read(directory, 'news/new-article.mdx'), edited);
+    assert.deepEqual(await Promise.all(['docs.json', 'index.mdx', 'news/list.mdx'].map(file => read(directory, file))), baseline);
   }
-  assert.match(await read(directory, 'news/renamed.mdx'), /Keep this body unchanged/);
+  const first = original.replace(/^slug:.*$/m, 'slug: false');
+  await writeFile(path.join(directory, 'news/new-article.mdx'), first);
+  await writeFile(path.join(directory, 'news/second.mdx'), first);
+  await assert.rejects(buildContent(directory), /duplicate article path/);
+  assert.equal(await read(directory, 'news/second.mdx'), first);
+  assert.equal(await read(directory, 'news/new-article.mdx'), first);
+  await assert.rejects(read(directory, 'news/a-new-article.mdx'), { code: 'ENOENT' });
+  await rm(path.join(directory, 'news/second.mdx'));
+  await writeFile(path.join(directory, 'news/new-article.mdx'), original.replace(/^slug:.*$/m, 'slug: occupied'));
+  await writeFile(path.join(directory, 'news/occupied.mdx'), 'Unfinished Draft');
+  const docs = JSON.parse(baseline[0]);
+  docs.navigation.groups.find(group => group.group === 'Draft').pages = ['news/occupied'];
+  await writeFile(path.join(directory, 'docs.json'), JSON.stringify(docs));
+  await assert.rejects(buildContent(directory), /cannot overwrite news\/occupied.mdx/);
+  assert.equal(await read(directory, 'news/occupied.mdx'), 'Unfinished Draft');
+  assert.equal(await read(directory, 'docs.json'), JSON.stringify(docs));
+  assert.equal(await read(directory, 'news/list.mdx'), baseline[2]);
+});
+
+test('slug changes saved in Draft take effect on restoration while withdrawal and legacy aliases stay intact', async t => {
+  const { directory } = await fixture(t);
+  await buildContent(directory);
+  const docs = JSON.parse(await read(directory, 'docs.json'));
+  docs.navigation.groups[1].pages = [];
+  docs.navigation.groups.find(group => group.group === 'Draft').pages = ['news/new-article'];
+  docs.redirects = [{ source: '/news/20261023120000', destination: '/news/new-article', permanent: true }];
+  await writeFile(path.join(directory, 'docs.json'), JSON.stringify(docs));
+  const edited = (await read(directory, 'news/new-article.mdx')).replace(/^slug:.*$/m, 'slug: short-name');
+  await writeFile(path.join(directory, 'news/new-article.mdx'), edited);
+  await buildContent(directory);
+  assert.equal(await read(directory, 'news/new-article.mdx'), edited);
+  assert.doesNotMatch(await read(directory, 'news/list.mdx'), /href="\/news\/new-article"|href="\/news\/short-name"/);
+  const restore = JSON.parse(await read(directory, 'docs.json'));
+  restore.navigation.groups[1].pages = ['news/new-article'];
+  restore.navigation.groups.find(group => group.group === 'Draft').pages = [];
+  await writeFile(path.join(directory, 'docs.json'), JSON.stringify(restore));
+  await buildContent(directory);
+  const published = JSON.parse(await read(directory, 'docs.json'));
+  assert.deepEqual(published.navigation.groups[1].pages, ['news/short-name']);
+  assert.ok(published.redirects.some(redirect => redirect.source === '/news/20261023120000' && redirect.destination === '/news/short-name' && redirect.permanent));
+  assert.ok(published.redirects.some(redirect => redirect.source === '/news/new-article' && redirect.destination === '/news/short-name' && redirect.permanent));
+  assert.ok(!published.redirects.some(redirect => redirect.destination === '/news/list'));
   assert.deepEqual((await buildContent(directory, { check: true })).changed, []);
+});
+
+test('watching an automatic title Path renames its file and refreshes navigation and lists', { timeout: 10000 }, async t => {
+  const { directory } = await fixture(t);
+  await writeFile(path.join(directory, 'news/new-article.mdx'), (await read(directory, 'news/new-article.mdx')).replace(/^slug:.*$/m, 'slug: false'));
+  await buildContent(directory);
+  let onReport = () => {};
+  const close = watchContent(directory, (error, result) => onReport(error, result));
+  try {
+    const refreshed = new Promise((resolve, reject) => { onReport = (error, result) => { if (error) reject(error); else if (result.changed.includes('news/a-renamed-article.mdx')) resolve(result); }; });
+    await writeFile(path.join(directory, 'news/a-new-article.mdx'), (await read(directory, 'news/a-new-article.mdx')).replace('A new article', 'A renamed article'));
+    await refreshed;
+    await assert.rejects(read(directory, 'news/a-new-article.mdx'), { code: 'ENOENT' });
+    assert.match(await read(directory, 'news/list.mdx'), /href="\/news\/a-renamed-article"/);
+    assert.deepEqual(JSON.parse(await read(directory, 'docs.json')).navigation.groups[1].pages, ['news/a-renamed-article']);
+  } finally { await close(); }
 });
 
 test('a Path saved without its corresponding MDX fails before navigation or lists can silently drop it', async t => {
@@ -115,8 +278,21 @@ test('a Path saved without its corresponding MDX fails before navigation or list
   await assert.rejects(buildContent(directory), /Path news\/20261118 does not match an existing file: news\/20261118\.mdx/);
   assert.deepEqual(await Promise.all(['docs.json', 'index.mdx', 'news/list.mdx', malformed].map(file => read(directory, file))), baseline);
   await rename(path.join(directory, malformed), path.join(directory, 'news/20261118.mdx'));
+  await writeFile(path.join(directory, 'news/20261118.mdx'), (await read(directory, 'news/20261118.mdx')).replace(/^slug:.*$/m, 'slug: \"20261118\"'));
   await buildContent(directory);
   assert.match(await read(directory, 'news/list.mdx'), /href="\/news\/20261118"/);
+  assert.deepEqual((await buildContent(directory, { check: true })).changed, []);
+});
+
+test('changing back to a former Path removes its old redirect instead of creating a loop', async t => {
+  const { directory } = await fixture(t);
+  await buildContent(directory);
+  const docs = JSON.parse(await read(directory, 'docs.json'));
+  docs.redirects = [{ source: '/news/former-name', destination: '/news/new-article', permanent: true }];
+  await writeFile(path.join(directory, 'docs.json'), JSON.stringify(docs));
+  await writeFile(path.join(directory, 'news/new-article.mdx'), (await read(directory, 'news/new-article.mdx')).replace(/^slug:.*$/m, 'slug: former-name'));
+  await buildContent(directory);
+  assert.deepEqual(JSON.parse(await read(directory, 'docs.json')).redirects, [{ source: '/news/new-article', destination: '/news/former-name', permanent: true }]);
   assert.deepEqual((await buildContent(directory, { check: true })).changed, []);
 });
 
@@ -153,7 +329,7 @@ test('watching a newly saved root MDX imports it and refreshes its list', { time
   const close = watchContent(directory, (error, result) => onReport(error, result));
   try {
     const refreshed = new Promise((resolve, reject) => { onReport = (error, result) => { if (error) reject(error); else if (result.changed.includes('news/saved-page.mdx')) resolve(result); }; });
-    await writeFile(path.join(directory, 'saved-page.mdx'), source);
+    await writeFile(path.join(directory, 'saved-page.mdx'), source.replace(/^slug:.*$/m, 'slug: saved-page'));
     assert.equal((await refreshed).count, 2);
     assert.match(await read(directory, 'news/list.mdx'), /href="\/news\/saved-page"/);
     await assert.rejects(read(directory, 'saved-page.mdx'), { code: 'ENOENT' });
@@ -299,6 +475,27 @@ test('Draft keeps incomplete content without validation and rejects non-article 
   }
 });
 
+test('legacy URL aliases survive Draft withdrawal and restoration of a renamed article', async t => {
+  const { directory } = await fixture(t);
+  await buildContent(directory);
+  const alias = { source: '/news/20261023120000', destination: '/news/new-article', permanent: true };
+  const docs = JSON.parse(await read(directory, 'docs.json'));
+  docs.redirects = [alias];
+  docs.navigation.groups.find(group => group.group === 'Draft').pages = ['news/new-article'];
+  await writeFile(path.join(directory, 'docs.json'), JSON.stringify(docs));
+  await buildContent(directory);
+  const withdrawn = JSON.parse(await read(directory, 'docs.json'));
+  assert.deepEqual(withdrawn.redirects, [alias, { source: '/news/new-article', destination: '/news/list', permanent: false }]);
+  assert.doesNotMatch(await read(directory, 'news/list.mdx'), /href="\/news\/new-article"/);
+  withdrawn.navigation.groups.find(group => group.group === 'Draft').pages = [];
+  withdrawn.navigation.groups[1].pages = ['news/new-article'];
+  await writeFile(path.join(directory, 'docs.json'), JSON.stringify(withdrawn));
+  await buildContent(directory);
+  assert.deepEqual(JSON.parse(await read(directory, 'docs.json')).redirects, [alias]);
+  assert.match(await read(directory, 'news/list.mdx'), /href="\/news\/new-article"/);
+  assert.deepEqual((await buildContent(directory, { check: true })).changed, []);
+});
+
 test('watching navigation drag operations rebuilds Draft redirects and restores lists', { timeout: 10000 }, async t => {
   const { directory } = await fixture(t);
   await buildContent(directory);
@@ -396,7 +593,7 @@ test('missing homepage settings are written back as false and never opt articles
 test('MDX paths and frontmatter alone supply new entries and a deterministic default order', async t => {
   const { directory, article } = await fixture(t);
   for (const [slug, date, order] of [['zeta', '2026-10-25', 0], ['beta', '2026-10-24', 0], ['alpha', '2026-10-24', 0], ['priority', '2025-01-01', 5]]) {
-    const listing = `listing:\n  date: ${date}\n  category: Technical\n  product: xParse\n  cover: /images/cover.webp\n  readMinutes: 4\n${order ? `  order: ${order}\n` : ''}`;
+    const listing = `slug: ${slug}\nlisting:\n  date: ${date}\n  category: Technical\n  product: xParse\n  cover: /images/cover.webp\n  readMinutes: 4\n${order ? `  order: ${order}\n` : ''}`;
     await writeFile(path.join(directory, `news/${slug}.mdx`), article.replace('title:', `${listing}title:`));
   }
   await buildContent(directory);

@@ -21,6 +21,27 @@ const productNames = item => Array.isArray(item.product) ? item.product : [item.
 const imageUrl = value => value.split('/').map(encodeURIComponent).join('/');
 const shortDate = date => new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${date}T00:00:00Z`));
 
+function articlePath(data, kind, file) {
+  if (data.slug != null && data.slug !== false && !['string', 'number'].includes(typeof data.slug)) throw new Error(`${file}: slug must be false, empty, or an English short name.`);
+  const custom = data.slug == null || data.slug === false ? '' : String(data.slug).trim();
+  const slug = custom ? custom.replace(/^\/?(?:news|cases)\//, '').replace(/^\//, '') : String(data.title || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/['’]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(slug) || ['list', 'index'].includes(slug)) throw new Error(`${file}: use an English title or set slug to an English short name, such as parsing-speed.`);
+  return `${kind}/${slug}.mdx`;
+}
+
+function rewriteArticleLinks(source, renames, siteUrl) {
+  if (!renames.size) return source;
+  const rewriteUrl = value => {
+    if (!value.startsWith('/') && !value.startsWith(`${siteUrl}/`)) return value;
+    const url = new URL(value, siteUrl);
+    if (url.origin !== new URL(siteUrl).origin) return value;
+    const target = renames.get(url.pathname);
+    return target ? `${value.startsWith('/') ? '' : url.origin}${target}${url.search}${url.hash}` : value;
+  };
+  return source.replace(/href=(["'])([^"']+)\1/g, (_, quote, url) => `href=${quote}${rewriteUrl(url)}${quote}`)
+    .replace(/(\]\()([^\s)]+)/g, (_, prefix, url) => prefix + rewriteUrl(url));
+}
+
 function renderCard(article, home = false) {
   const { item, title, description } = article;
   const kind = item.page.split('/')[0];
@@ -86,6 +107,8 @@ async function readArticle(directory, file, siteUrl, validate, sourceFile = file
   for (const key of ['title', 'description']) {
     if (typeof data?.[key] !== 'string' || !data[key].trim()) throw new Error(`${file}: add a ${key} in the page editor.`);
   }
+  file = articlePath(data, file.split('/')[0], sourceFile);
+  item.page = file.slice(0, -4);
   try { await access(path.join(directory, item.cover.slice(1))); }
   catch { throw new Error(`${item.page}: cover image not found: ${item.cover}`); }
   if (item.customerLogo) {
@@ -112,10 +135,11 @@ async function readArticle(directory, file, siteUrl, validate, sourceFile = file
   document.set('hideFooterPagination', true);
   document.set('timestamp', false);
   if (!Object.hasOwn(item, 'homeOrder')) document.setIn(['listing', 'homeOrder'], false);
+  if (!Object.hasOwn(data, 'slug')) document.set('slug', false);
   document.set('sidebarTitle', item.customer || data.title);
   document.set('og:image', new URL(imageUrl(item.cover), siteUrl).href);
   const updated = `---\n${document.toString({ lineWidth: 0 })}---\n\n${body}\n`;
-  return { item, title: data.title, description: data.description, file, source: updated };
+  return { item, title: data.title, description: data.description, file, sourceFile, source: updated };
 }
 
 export async function buildContent(directory = root, { check = false } = {}) {
@@ -141,13 +165,6 @@ export async function buildContent(directory = root, { check = false } = {}) {
     }
   };
   await collectDrafts(draftGroup.pages || []);
-  const isDraftRedirect = redirect => /^\/(news|cases)\/[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(redirect.source) && redirect.destination === `/${redirect.source.split('/')[1]}/list` && redirect.permanent === false;
-  const redirects = (docs.redirects || []).filter(redirect => !isDraftRedirect(redirect));
-  for (const page of [...drafts].sort()) {
-    if (redirects.some(redirect => redirect.source === `/${page}`)) throw new Error(`Draft: remove the existing redirect before withdrawing ${page}.`);
-    redirects.push({ source: `/${page}`, destination: `/${page.split('/')[0]}/list`, permanent: false });
-  }
-  if (redirects.length || docs.redirects) docs.redirects = redirects;
   const schema = JSON.parse(await read('content/schema.json'));
   const settings = JSON.parse(await read('content/site.json'));
   const ajv = new Ajv({ allErrors: true, strict: false });
@@ -155,7 +172,7 @@ export async function buildContent(directory = root, { check = false } = {}) {
   const validateSite = ajv.compile({ ...schema, $ref: '#/definitions/site' });
   if (!validateSite(settings)) throw new Error(`content/site.json: ${ajv.errorsText(validateSite.errors)}`);
   const articles = {};
-  const imported = [];
+  const imported = new Set();
   for (const kind of ['news', 'cases']) {
     const label = kind === 'news' ? 'Blog' : 'Case Studies';
     const group = groups.find(item => item.group === label);
@@ -171,9 +188,9 @@ export async function buildContent(directory = root, { check = false } = {}) {
       if (drafts.has(file.slice(0, -4))) continue;
       if (sourceFile !== file) {
         if (files.has(file)) throw new Error(`${label}: cannot move ${sourceFile}: ${file} already exists.`);
-        if (imported.includes(sourceFile)) throw new Error(`${sourceFile}: keep a new page in either Blog or Case Studies, not both.`);
+        if (imported.has(sourceFile)) throw new Error(`${sourceFile}: keep a new page in either Blog or Case Studies, not both.`);
         files.set(file, sourceFile);
-        imported.push(sourceFile);
+        imported.add(sourceFile);
       }
     }
     const validate = ajv.compile({ ...schema, $ref: `#/definitions/${kind === 'news' ? 'news' : 'story'}` });
@@ -185,6 +202,27 @@ export async function buildContent(directory = root, { check = false } = {}) {
     articles[kind].sort((a, b) => (a.item.order ?? 0) - (b.item.order ?? 0) || b.item.date.localeCompare(a.item.date) || a.item.page.localeCompare(b.item.page));
     if (articles[kind].filter(article => article.item.featured).length > 1) throw new Error(`${kind}: only one article can have featured: true.`);
   }
+  const pathRenames = new Map();
+  const destinations = new Set();
+  for (const article of [...articles.news, ...articles.cases]) {
+    if (destinations.has(article.file)) throw new Error(`${article.sourceFile}: slug produces a duplicate article path: ${article.file}. Choose a different slug.`);
+    destinations.add(article.file);
+    if (article.sourceFile === article.file) continue;
+    if (await access(path.join(directory, article.file)).then(() => true, () => false)) throw new Error(`${article.sourceFile}: cannot overwrite ${article.file}. Choose a different slug.`);
+    imported.add(article.sourceFile);
+    pathRenames.set(`/${article.sourceFile.slice(0, -4)}`, `/${article.item.page}`);
+  }
+  const isDraftRedirect = redirect => /^\/(news|cases)\/[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(redirect.source) && redirect.destination === `/${redirect.source.split('/')[1]}/list` && redirect.permanent === false;
+  const renamedDestinations = new Set(pathRenames.values());
+  const redirects = (docs.redirects || []).filter(redirect => !isDraftRedirect(redirect) && !renamedDestinations.has(redirect.source)).map(redirect => ({ ...redirect, destination: pathRenames.get(redirect.destination) || redirect.destination }));
+  for (const [source, destination] of pathRenames) {
+    if (!redirects.some(redirect => redirect.source === source)) redirects.push({ source, destination, permanent: true });
+  }
+  for (const page of [...drafts].sort()) {
+    if (redirects.some(redirect => redirect.source === `/${page}`)) throw new Error(`Draft: remove the existing redirect before withdrawing ${page}.`);
+    redirects.push({ source: `/${page}`, destination: `/${page.split('/')[0]}/list`, permanent: false });
+  }
+  if (redirects.length || docs.redirects) docs.redirects = redirects;
   const output = new Map();
   for (const kind of ['news', 'cases']) {
     const template = await read(`templates/${kind}-list.mdx`);
@@ -202,7 +240,16 @@ export async function buildContent(directory = root, { check = false } = {}) {
         .replace('{{PAGE_SIZE}}', String(pageSize)).replace('{{PAGE}}', String(page)).replace('{{PAGINATION}}', pagination(kind, page, entries.length));
       output.set(file, source);
     }
-    for (const article of articles[kind]) output.set(article.file, article.source);
+    for (const article of articles[kind]) output.set(article.file, rewriteArticleLinks(article.source, pathRenames, settings.siteUrl));
+  }
+  if (pathRenames.size) {
+    for (const kind of ['news', 'cases']) {
+      for (const file of (await readdir(path.join(directory, kind))).filter(file => file.endsWith('.mdx') && file !== 'list.mdx' && !output.has(`${kind}/${file}`) && !imported.has(`${kind}/${file}`))) {
+        const source = await read(`${kind}/${file}`);
+        const updated = rewriteArticleLinks(source, pathRenames, settings.siteUrl);
+        if (source !== updated) output.set(`${kind}/${file}`, updated);
+      }
+    }
   }
   let home = await read('templates/index.mdx');
   for (const kind of ['news', 'cases']) {
@@ -230,7 +277,7 @@ export async function buildContent(directory = root, { check = false } = {}) {
     if (original !== source) changed.push(file);
   }
   const stale = (await Promise.all(['news', 'cases'].map(async kind => (await readdir(path.join(directory, `${kind}/list`)).catch(() => [])).filter(file => /^\d+\.mdx$/.test(file) && !output.has(`${kind}/list/${file}`)).map(file => `${kind}/list/${file}`)))).flat();
-  if (check && (changed.length || stale.length || imported.length)) throw new Error(`Generated content is out of date. Run npm run content:build.\n${[...changed, ...stale, ...imported].join('\n')}`);
+  if (check && (changed.length || stale.length || imported.size)) throw new Error(`Generated content is out of date. Run npm run content:build.\n${[...changed, ...stale, ...imported].join('\n')}`);
   // Resolve and validate every input before changing any output.
   if (!check) {
     for (const file of changed) {

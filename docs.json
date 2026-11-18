@@ -21,19 +21,19 @@
       {
         "group": "Blog",
         "pages": [
-          "news/20260806165623929",
-          "news/20260805101419355",
-          "news/20260416141504142",
-          "news/20261112102330592",
+          "news/intelligent-exam-paper-parsing-a-practical-guide-to-automated-question-extraction",
+          "news/textin-xparse-is-now-available-as-a-workbuddy-connector",
+          "news/ragflow-x-textin-integration-2-0-high-quality-pdf-parsing-and-flexible-parser-switching",
+          "news/textin-xparse-is-now-available-on-deepseek-harness",
           "news/100-pages-in-2-seconds-why-document-parsing-speed-matters"
         ]
       },
       {
         "group": "Case Studies",
         "pages": [
-          "cases/20260109165413680",
-          "cases/20260120144502796",
-          "cases/20260515161812188"
+          "cases/how-webasto-cut-invoice-processing-time-by-95-with-textin",
+          "cases/how-spdb-financial-leasing-scaled-contract-operations-with-textin",
+          "cases/how-chinese-heavy-equipment-manufacturer-built-a-shared-document-layer-for-ai-with-textin"
         ]
       },
       {
@@ -43,28 +43,28 @@
             "group": "case",
             "pages": [
               "cases/test1",
-              "cases/20260115115348705",
-              "cases/20260115154400225",
-              "cases/20260120170626786",
-              "cases/20260209172616177",
-              "cases/20260330181528169",
-              "cases/20260422104515242",
-              "cases/20260525114724940",
-              "cases/20260731103033264",
-              "cases/20261016113656382",
-              "cases/20260915144322620",
-              "cases/20260709164632354",
-              "cases/20260316170957067"
+              "cases/from-printed-questions-to-structured-learning-content",
+              "cases/a-stronger-knowledge-foundation-for-clinical-ai",
+              "cases/a-document-foundation-for-400-financial-ai-workflows",
+              "cases/a-new-document-engine-for-automotive-finance",
+              "cases/from-financial-reports-to-same-day-research-data",
+              "cases/a-faster-route-through-shipping-documents",
+              "cases/one-parsing-platform-for-more-than-20-business-systems",
+              "cases/from-two-hours-to-ten-minutes-per-document",
+              "cases/making-every-contract-clause-verifiable",
+              "cases/one-document-platform-four-banking-workflows",
+              "cases/from-50-to-70-automated-expense-review",
+              "cases/faster-document-review-for-cross-border-banking"
             ]
           },
           {
             "group": "blog",
             "pages": [
-              "news/20260922154509747",
-              "news/20260731145844973",
-              "news/20260727145812209",
-              "news/20260721144155912",
-              "news/20260813171405940"
+              "news/turn-exam-papers-into-structured-learning-data",
+              "news/parsing-dense-tables-without-losing-a-row",
+              "news/from-long-documents-to-retrieval-ready-knowledge",
+              "news/from-invoice-capture-to-accounts-payable-automation",
+              "news/when-a-table-crosses-pages-context-must-follow"
             ]
           }
         ],
@@ -163,62 +163,182 @@
   },
   "redirects": [
     {
+      "source": "/news/20260416141504142",
+      "destination": "/news/ragflow-x-textin-integration-2-0-high-quality-pdf-parsing-and-flexible-parser-switching",
+      "permanent": true
+    },
+    {
+      "source": "/news/20260721144155912",
+      "destination": "/news/from-invoice-capture-to-accounts-payable-automation",
+      "permanent": true
+    },
+    {
+      "source": "/news/20260727145812209",
+      "destination": "/news/from-long-documents-to-retrieval-ready-knowledge",
+      "permanent": true
+    },
+    {
+      "source": "/news/20260731145844973",
+      "destination": "/news/parsing-dense-tables-without-losing-a-row",
+      "permanent": true
+    },
+    {
+      "source": "/news/20260805101419355",
+      "destination": "/news/textin-xparse-is-now-available-as-a-workbuddy-connector",
+      "permanent": true
+    },
+    {
+      "source": "/news/20260806165623929",
+      "destination": "/news/intelligent-exam-paper-parsing-a-practical-guide-to-automated-question-extraction",
+      "permanent": true
+    },
+    {
+      "source": "/news/20260813171405940",
+      "destination": "/news/when-a-table-crosses-pages-context-must-follow",
+      "permanent": true
+    },
+    {
+      "source": "/news/20260922154509747",
+      "destination": "/news/turn-exam-papers-into-structured-learning-data",
+      "permanent": true
+    },
+    {
+      "source": "/news/20261112102330592",
+      "destination": "/news/textin-xparse-is-now-available-on-deepseek-harness",
+      "permanent": true
+    },
+    {
+      "source": "/cases/20260109165413680",
+      "destination": "/cases/how-webasto-cut-invoice-processing-time-by-95-with-textin",
+      "permanent": true
+    },
+    {
       "source": "/cases/20260115115348705",
-      "destination": "/cases/list",
-      "permanent": false
+      "destination": "/cases/from-printed-questions-to-structured-learning-content",
+      "permanent": true
     },
     {
       "source": "/cases/20260115154400225",
-      "destination": "/cases/list",
-      "permanent": false
+      "destination": "/cases/a-stronger-knowledge-foundation-for-clinical-ai",
+      "permanent": true
+    },
+    {
+      "source": "/cases/20260120144502796",
+      "destination": "/cases/how-spdb-financial-leasing-scaled-contract-operations-with-textin",
+      "permanent": true
     },
     {
       "source": "/cases/20260120170626786",
-      "destination": "/cases/list",
-      "permanent": false
+      "destination": "/cases/a-document-foundation-for-400-financial-ai-workflows",
+      "permanent": true
     },
     {
       "source": "/cases/20260209172616177",
-      "destination": "/cases/list",
-      "permanent": false
+      "destination": "/cases/a-new-document-engine-for-automotive-finance",
+      "permanent": true
     },
     {
       "source": "/cases/20260316170957067",
-      "destination": "/cases/list",
-      "permanent": false
+      "destination": "/cases/faster-document-review-for-cross-border-banking",
+      "permanent": true
     },
     {
       "source": "/cases/20260330181528169",
-      "destination": "/cases/list",
-      "permanent": false
+      "destination": "/cases/from-financial-reports-to-same-day-research-data",
+      "permanent": true
     },
     {
       "source": "/cases/20260422104515242",
-      "destination": "/cases/list",
-      "permanent": false
+      "destination": "/cases/a-faster-route-through-shipping-documents",
+      "permanent": true
+    },
+    {
+      "source": "/cases/20260515161812188",
+      "destination": "/cases/how-chinese-heavy-equipment-manufacturer-built-a-shared-document-layer-for-ai-with-textin",
+      "permanent": true
     },
     {
       "source": "/cases/20260525114724940",
-      "destination": "/cases/list",
-      "permanent": false
+      "destination": "/cases/one-parsing-platform-for-more-than-20-business-systems",
+      "permanent": true
     },
     {
       "source": "/cases/20260709164632354",
-      "destination": "/cases/list",
-      "permanent": false
+      "destination": "/cases/from-50-to-70-automated-expense-review",
+      "permanent": true
     },
     {
       "source": "/cases/20260731103033264",
-      "destination": "/cases/list",
-      "permanent": false
+      "destination": "/cases/from-two-hours-to-ten-minutes-per-document",
+      "permanent": true
     },
     {
       "source": "/cases/20260915144322620",
+      "destination": "/cases/one-document-platform-four-banking-workflows",
+      "permanent": true
+    },
+    {
+      "source": "/cases/20261016113656382",
+      "destination": "/cases/making-every-contract-clause-verifiable",
+      "permanent": true
+    },
+    {
+      "source": "/cases/a-document-foundation-for-400-financial-ai-workflows",
       "destination": "/cases/list",
       "permanent": false
     },
     {
-      "source": "/cases/20261016113656382",
+      "source": "/cases/a-faster-route-through-shipping-documents",
+      "destination": "/cases/list",
+      "permanent": false
+    },
+    {
+      "source": "/cases/a-new-document-engine-for-automotive-finance",
+      "destination": "/cases/list",
+      "permanent": false
+    },
+    {
+      "source": "/cases/a-stronger-knowledge-foundation-for-clinical-ai",
+      "destination": "/cases/list",
+      "permanent": false
+    },
+    {
+      "source": "/cases/faster-document-review-for-cross-border-banking",
+      "destination": "/cases/list",
+      "permanent": false
+    },
+    {
+      "source": "/cases/from-50-to-70-automated-expense-review",
+      "destination": "/cases/list",
+      "permanent": false
+    },
+    {
+      "source": "/cases/from-financial-reports-to-same-day-research-data",
+      "destination": "/cases/list",
+      "permanent": false
+    },
+    {
+      "source": "/cases/from-printed-questions-to-structured-learning-content",
+      "destination": "/cases/list",
+      "permanent": false
+    },
+    {
+      "source": "/cases/from-two-hours-to-ten-minutes-per-document",
+      "destination": "/cases/list",
+      "permanent": false
+    },
+    {
+      "source": "/cases/making-every-contract-clause-verifiable",
+      "destination": "/cases/list",
+      "permanent": false
+    },
+    {
+      "source": "/cases/one-document-platform-four-banking-workflows",
+      "destination": "/cases/list",
+      "permanent": false
+    },
+    {
+      "source": "/cases/one-parsing-platform-for-more-than-20-business-systems",
       "destination": "/cases/list",
       "permanent": false
     },
@@ -228,27 +348,27 @@
       "permanent": false
     },
     {
-      "source": "/news/20260721144155912",
+      "source": "/news/from-invoice-capture-to-accounts-payable-automation",
       "destination": "/news/list",
       "permanent": false
     },
     {
-      "source": "/news/20260727145812209",
+      "source": "/news/from-long-documents-to-retrieval-ready-knowledge",
       "destination": "/news/list",
       "permanent": false
     },
     {
-      "source": "/news/20260731145844973",
+      "source": "/news/parsing-dense-tables-without-losing-a-row",
       "destination": "/news/list",
       "permanent": false
     },
     {
-      "source": "/news/20260813171405940",
+      "source": "/news/turn-exam-papers-into-structured-learning-data",
       "destination": "/news/list",
       "permanent": false
     },
     {
-      "source": "/news/20260922154509747",
+      "source": "/news/when-a-table-crosses-pages-context-must-follow",
       "destination": "/news/list",
       "permanent": false
     }
