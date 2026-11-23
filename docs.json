@@ -15,7 +15,8 @@
         "pages": [
           "index",
           "news/list",
-          "cases/list"
+          "cases/list",
+          "news/list/2"
         ]
       },
       {
@@ -26,7 +27,7 @@
           "news/ragflow-x-textin-integration-2-0-high-quality-pdf-parsing-and-flexible-parser-switching",
           "news/textin-xparse-is-now-available-on-deepseek-harness",
           "news/100-pages-in-2-seconds-why-document-parsing-speed-matters",
-          "untitled-page"
+          "news/document-digitization-and-intelligent-processing-an-overview-of-document-image-dewarping-technology"
         ]
       },
       {
@@ -281,6 +282,11 @@
     {
       "source": "/cases/20261016113656382",
       "destination": "/cases/making-every-contract-clause-verifiable",
+      "permanent": true
+    },
+    {
+      "source": "/untitled-page",
+      "destination": "/news/document-digitization-and-intelligent-processing-an-overview-of-document-image-dewarping-technology",
       "permanent": true
     },
     {
