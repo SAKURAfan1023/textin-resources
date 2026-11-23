@@ -88,6 +88,22 @@ test('console-created root pages move into their navigation category and regener
   assert.deepEqual((await buildContent(directory, { check: true })).changed, []);
 });
 
+test('publishing preserves native Frame image width, caption and font size for both article types', async t => {
+  const { directory, catalog, save, article } = await fixture(t);
+  catalog.cases.push({ page: 'cases/customer', date: '2026-10-23', industry: 'Manufacturing', scenarios: ['Document structuring'], product: 'xParse', cover: '/images/cover.webp', customer: 'Customer', metric: { value: '60%', label: 'verified improvement' } });
+  await writeFile(path.join(directory, 'cases/customer.mdx'), article);
+  await save();
+  const image = '<Frame caption="A customer workflow." style={{ width: "70%", fontSize: "15px" }}>\n  <img src="/images/cover.webp" alt="Customer workflow" />\n</Frame>';
+  for (const file of ['news/new-article.mdx', 'cases/customer.mdx']) {
+    await writeFile(path.join(directory, file), `${await read(directory, file)}\n${image}\n`);
+  }
+  await buildContent(directory);
+  for (const file of ['news/new-article.mdx', 'cases/customer.mdx']) {
+    assert.ok((await read(directory, file)).includes(image), `${file}: image settings must stay operator-owned`);
+  }
+  assert.deepEqual((await buildContent(directory, { check: true })).changed, []);
+});
+
 test('empty slug generates the article filename from its title and follows later title edits', async t => {
   for (const kind of ['news', 'cases']) {
     for (const setting of ['', 'slug: false\n', 'slug:\n', 'slug: ""\n', 'slug: "  "\n']) {

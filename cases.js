@@ -16,12 +16,24 @@
   let syncArticlePosition = () => {};
   const articleHeadings = content => [...content.querySelectorAll('h2[id]')].filter(heading => !heading.closest('.card'));
   const headingKey = content => articleHeadings(content).map(heading => `${heading.id}:${heading.textContent}`).join('|');
+  function syncArticleImages(content) {
+    content?.querySelectorAll('.frame').forEach(frame => {
+      if (!frame.querySelector('img')) return;
+      // Invalid CSS is already ignored by the browser; zero-sized media use our defaults too.
+      for (const property of ['width', 'font-size']) {
+        if (parseFloat(frame.style.getPropertyValue(property)) <= 0) frame.style.removeProperty(property);
+      }
+      const caption = frame.querySelector('[data-component-part="frame-caption"]');
+      if (caption && caption.hidden !== !caption.textContent.trim()) caption.hidden = !caption.textContent.trim();
+    });
+  }
   function mountArticle(content) {
     const isArticle = /^\/(cases|news)\/(?!list(?:\/|$))[^/]+\/?$/.test(location.pathname);
     if (!isArticle || !content) {
       clearArticle(); articleContent = null; articleHeadingKey = null;
       return;
     }
+    syncArticleImages(content);
     const key = `${location.pathname}:${headingKey(content)}`;
     if (content === articleContent && key === articleHeadingKey) return;
     clearArticle();
@@ -536,11 +548,12 @@
     mountFrame = requestAnimationFrame(() => { mountFrame = null; init(); });
   };
   // Local MDX hot updates can replace the catalog without a navigation event.
-  new MutationObserver(() => {
+  new MutationObserver(mutations => {
     const next = document.querySelector('[data-content-catalog]');
     const content = document.querySelector('#content');
+    if (articleContent?.isConnected && mutations.some(change => change.type === 'childList' || change.target.closest?.('.frame'))) syncArticleImages(articleContent);
     if (next !== catalog || next?.dataset.catalogIndex !== catalogIndex || content !== articleContent && /^\/(cases|news)\/(?!list(?:\/|$))[^/]+\/?$/.test(location.pathname) || articleContent?.isConnected && `${location.pathname}:${headingKey(articleContent)}` !== articleHeadingKey) mount();
-  }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-catalog-index'] });
+  }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-catalog-index', 'style'] });
   window.addEventListener('mintlify:navigate', mount);
   window.addEventListener('load', mount, { once: true });
   window.addEventListener('popstate', mount);

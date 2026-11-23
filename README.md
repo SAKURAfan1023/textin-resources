@@ -231,13 +231,48 @@ listing: # 首页与列表配置
 | 操作 | 呈现结果 |
 | --- | --- |
 | 输入 `/`，选择 Heading 2 / Heading 3 | 章节与小标题；不重复文章标题 |
-| 插入或拖入图片 | 在当前位置显示，填写简短英文说明 |
+| 插入或拖入图片 | 在当前位置显示；需要调整大小或图下注解时使用下方模板 |
 | 插入 List、Table | 要点、对比表格 |
 | 官方 Note、Tip、Warning | 提示框 |
 | 官方 Steps、Accordion、Tabs | 步骤、折叠区、切换内容 |
 | 普通链接 | 站内使用 `/cases/文章路径` 或 `/news/文章路径` |
 
 封面与客户 Logo 可直接使用上传后的图片，不要求转成 WebP 或重命名；支持 PNG 等上传格式、空格和中文文件名。将文件路径填入 `cover` 或 `customerLogo`，例如 `images/blog/Intelligent Exam Paper Parsing.png`；路径首尾误填的空白会自动清除，开头的 `/` 会自动补齐，文件名中间的空格保留。首页、列表和分享图片地址自动同步。图片须已上传到 `images/`，封面建议横向构图、重点居中。
+
+### 正文配图：大小与图下注解
+
+Blog 和 Case Studies 操作相同：上传图片 → 在控制台 MDX 编辑模式中将模板粘贴到正文位置 → 修改下表四项 → 用站点 Preview 查看效果。无需修改页头配置，也不用处理图片原始尺寸。
+
+默认宽度为正文区域的 70%，注解字号比正文小 2px（如正文 16px，注解为 14px）。下方模板演示手动指定字号：
+
+```mdx
+<Frame caption="Document parsing workflow." style={{ width: "70%", fontSize: "15px" }}>
+  <img src="/images/blog/example.png" alt="Document parsing workflow" />
+</Frame>
+```
+
+| 修改位置 | 填写方式 | 页面效果与默认值 |
+| --- | --- | --- |
+| `src` | 换成已上传图片的路径 | 显示对应图片；保留开头的 `/` |
+| `width: "70%"` | 只改数字，保留引号和 `%`，如 `50%`、`85%` | 按正文区域宽度缩放，居中、高度等比例变化；不填或无效时默认 70%，超出 100% 时按正文宽度展示 |
+| `caption="…"` | 填写图下方需要显示的英文注解 | 居中、浅灰色，长文字自动换行；不填、空字符串或只有空格时不显示，不留注解空白 |
+| `fontSize: "15px"` | 只改数字，保留引号和 `px`，如 `12px`、`15px` | 调整这一张图的注解字号；不填或无效时自动比正文小 2px；删除此项可恢复自动字号 |
+
+下图依次为默认 70%、手动 100%、手动 50%；注解字号分别为正文减 2px、15px、12px：
+
+![正文图片宽度与注解字号效果对照](images/guide/body-image-sizing.jpg)
+
+`alt` 填图片内容的简短英文描述，用于无障碍阅读和图片加载失败时的替代说明，不会作为图下注解显示。宽度或字号误填为 0 时也使用默认值。手机端沿用设置的比例，最大不超过正文区域。
+
+只需要默认大小和注解时，删除整个 `style` 即可：
+
+```mdx
+<Frame caption="Document parsing workflow.">
+  <img src="/images/blog/example.png" alt="Document parsing workflow" />
+</Frame>
+```
+
+不需要注解时删除 `caption` 或填写 `caption=""`。原有 `![说明](/images/图片.png)` 仍可使用；方括号里的说明和图片悬停标题都不会自动变成图下注解。正文配图设置不改变首页、列表或分享封面的尺寸。
 
 正文使用 Markdown 和 Mintlify 官方组件，不添加 `<time>`、`<div>`、自定义组件或脚本。返回列表、信息栏与底部 CTA 自动生成，不编辑 `content:metadata`、`content:footer` 注释之间的内容。已有底部 CTA 保留编辑器保存的写法，`<Card />` 和 `<Card>…</Card>` 均可，不会强制互转。页头配置不会显示为正文。
 
