@@ -18,7 +18,17 @@
   const headingKey = content => articleHeadings(content).map(heading => `${heading.id}:${heading.textContent}`).join('|');
   function syncArticleImages(content) {
     content?.querySelectorAll('.frame').forEach(frame => {
-      if (!frame.querySelector('img')) return;
+      const image = frame.querySelector('img');
+      if (!image) return;
+      // The dashboard preserves string classes on images, but rejects Frame style objects.
+      for (const [prefix, property, unit] of [['image-width-', '--article-image-width', '%'], ['caption-size-', '--article-caption-size', 'px']]) {
+        const value = [...image.classList].find(name => name.startsWith(prefix))?.slice(prefix.length);
+        const size = value && /^\d+(?:\.\d+)?$/.test(value) && Number(value) > 0 ? `${value}${unit}` : '';
+        if (frame.style.getPropertyValue(property) !== size) {
+          if (size) frame.style.setProperty(property, size);
+          else frame.style.removeProperty(property);
+        }
+      }
       // Invalid CSS is already ignored by the browser; zero-sized media use our defaults too.
       for (const property of ['width', 'font-size']) {
         if (parseFloat(frame.style.getPropertyValue(property)) <= 0) frame.style.removeProperty(property);
@@ -553,7 +563,7 @@
     const content = document.querySelector('#content');
     if (articleContent?.isConnected && mutations.some(change => change.type === 'childList' || change.target.closest?.('.frame'))) syncArticleImages(articleContent);
     if (next !== catalog || next?.dataset.catalogIndex !== catalogIndex || content !== articleContent && /^\/(cases|news)\/(?!list(?:\/|$))[^/]+\/?$/.test(location.pathname) || articleContent?.isConnected && `${location.pathname}:${headingKey(articleContent)}` !== articleHeadingKey) mount();
-  }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-catalog-index', 'style'] });
+  }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-catalog-index', 'style', 'class'] });
   window.addEventListener('mintlify:navigate', mount);
   window.addEventListener('load', mount, { once: true });
   window.addEventListener('popstate', mount);

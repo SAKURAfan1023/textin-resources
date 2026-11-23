@@ -241,30 +241,24 @@ listing: # 首页与列表配置
 
 ### 正文配图：大小与图下注解
 
-Blog 和 Case Studies 操作相同：上传图片 → 在控制台 MDX 编辑模式中将模板粘贴到正文位置 → 修改下表四项 → 用站点 Preview 查看效果。无需修改页头配置，也不用处理图片原始尺寸。
-
-默认宽度为正文区域的 70%，注解字号比正文小 2px（如正文 16px，注解为 14px）。下方模板演示手动指定字号：
+Blog 和 Case Studies 操作相同：上传图片 → 在控制台 MDX 编辑模式中粘贴模板 → 替换路径和注解 → 用站点 Preview 检查后发布。
 
 ```mdx
-<Frame caption="Document parsing workflow." style={{ width: "70%", fontSize: "15px" }}>
-  <img src="/images/blog/example.png" alt="Document parsing workflow" />
+<Frame caption="Document parsing workflow.">
+  <img src="/images/blog/example.png" alt="Document parsing workflow" className="image-width-70 caption-size-14" />
 </Frame>
 ```
 
 | 修改位置 | 填写方式 | 页面效果与默认值 |
 | --- | --- | --- |
-| `src` | 换成已上传图片的路径 | 显示对应图片；保留开头的 `/` |
-| `width: "70%"` | 只改数字，保留引号和 `%`，如 `50%`、`85%` | 按正文区域宽度缩放，居中、高度等比例变化；不填或无效时默认 70%，超出 100% 时按正文宽度展示 |
-| `caption="…"` | 填写图下方需要显示的英文注解 | 居中、浅灰色，长文字自动换行；不填、空字符串或只有空格时不显示，不留注解空白 |
-| `fontSize: "15px"` | 只改数字，保留引号和 `px`，如 `12px`、`15px` | 调整这一张图的注解字号；不填或无效时自动比正文小 2px；删除此项可恢复自动字号 |
+| `src` | 换成已上传图片的路径，保留开头的 `/` | 显示对应图片 |
+| `image-width-70` | 只改末尾数字，如 `image-width-50`、`image-width-85` | 占正文宽度的 50%、85%；居中、高度等比例变化。省略或无效时默认 70%，超出 100% 时按正文宽度展示 |
+| `caption="…"` | 填写图片下方的英文注解 | 居中、浅灰色，长文字自动换行；不填或为空时不显示、不留空白 |
+| `caption-size-14` | 只改末尾数字，如 `caption-size-12`、`caption-size-15` | 注解字号为 12px、15px；省略或无效时比正文小 2px |
 
-下图依次为默认 70%、手动 100%、手动 50%；注解字号分别为正文减 2px、15px、12px：
+两个设置写在 **`img` 的 `className`** 中，用一个空格分隔。不写在 `Frame` 上，也不使用 `style={{ ... }}`，以兼容控制台可视化编辑器。
 
-![正文图片宽度与注解字号效果对照](images/guide/body-image-sizing.jpg)
-
-`alt` 填图片内容的简短英文描述，用于无障碍阅读和图片加载失败时的替代说明，不会作为图下注解显示。宽度或字号误填为 0 时也使用默认值。手机端沿用设置的比例，最大不超过正文区域。
-
-只需要默认大小和注解时，删除整个 `style` 即可：
+只需要默认大小和注解时，删除整个 `className`：
 
 ```mdx
 <Frame caption="Document parsing workflow.">
@@ -272,7 +266,13 @@ Blog 和 Case Studies 操作相同：上传图片 → 在控制台 MDX 编辑模
 </Frame>
 ```
 
-不需要注解时删除 `caption` 或填写 `caption=""`。原有 `![说明](/images/图片.png)` 仍可使用；方括号里的说明和图片悬停标题都不会自动变成图下注解。正文配图设置不改变首页、列表或分享封面的尺寸。
+默认宽度 70%，注解比正文小 2px（如正文 16px，注解 14px）。只删除 `caption-size-14` 可恢复自动字号，保留自定义宽度；只删除 `image-width-70` 可恢复默认宽度，保留自定义字号。数字为 0 或填写无效值时使用默认值。
+
+下图依次为默认 70%、手动 100%、手动 50%；注解字号分别为正文减 2px、15px、12px：
+
+![正文图片宽度与注解字号效果对照](images/guide/body-image-sizing.jpg)
+
+`alt` 是图片内容的简短英文描述，用于无障碍阅读和图片加载失败时的替代说明，不会作为图下注解显示。不需要注解时删除 `caption` 或填写 `caption=""`。原有 Markdown 图片仍可使用；需要上述设置时改用模板。手机端沿用设置比例，最大不超过正文区域。正文配图设置不改变首页、列表或分享封面的尺寸。
 
 正文使用 Markdown 和 Mintlify 官方组件，不添加 `<time>`、`<div>`、自定义组件或脚本。返回列表、信息栏与底部 CTA 自动生成，不编辑 `content:metadata`、`content:footer` 注释之间的内容。已有底部 CTA 保留编辑器保存的写法，`<Card />` 和 `<Card>…</Card>` 均可，不会强制互转。页头配置不会显示为正文。
 
