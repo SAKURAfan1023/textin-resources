@@ -1,6 +1,6 @@
 ---
-title: "Document Digitization and Intelligent Processing: An Overview of Document Image Dewarping Technology"
-description: "The image correction solution developed by Intsig’s technical team addresses document dewarping challenges, improving OCR performance and enhancing intelligent image processing capabilities."
+title: "Document Image Dewarping: Why It Matters for Digitization and Intelligent Processing "
+description: "The document image dewarping solution developed by INTSIG corrects warped document images and improves OCR and downstream intelligent document processing."
 keywords:
   - "Document Image Dewarping"
   - "Document Image Correction"
@@ -31,7 +31,7 @@ Technical · xParse · Nov 20, 2026
 
 As electronic documents offer advantages in archiving, editing, signing, and sharing, document digitization has become increasingly widespread. Meanwhile, with the growing availability of high-quality cameras on mobile devices such as smartphones, capturing documents digitally using mobile devices has become commonplace.
 
-Although mobile devices make it easy for anyone to capture document images, they also introduce greater complexity into the quality and characteristics of the original images. Common issues in document image processing include page warping, shadow occlusion, moiré patterns, image blurring, and unclear text. These distortions hinder intelligent document processing and make downstream tasks such as OCR recognition, information extraction, layout analysis, and reconstruction more challenging.
+Although mobile devices make it easy for anyone to capture document images, they also introduce greater variability in image quality and characteristics. Common issues in document image processing include page warping, shadow occlusion, moiré patterns, image blurring, and unclear text. These distortions hinder intelligent document processing and make downstream tasks such as OCR, information extraction, layout analysis, and reconstruction more challenging.
 
 In this article, we focus on document image dewarping, an important image processing technique, and explore its development and emerging approaches.
 
@@ -53,15 +53,15 @@ However, their correction performance depended heavily on the accuracy of text-l
 
 <sup>                                              </sup><sub>Text-Line-Based Coordinate Transformation for Document Dewarping</sub>
 
-Against this background, improved methods based on text-line fitting were proposed. These approaches use iterative optimization with a loss function to gradually obtain dewarping results. However, they are time-consuming and therefore unsuitable for real-time applications.
+To overcome these limitations, improved methods based on text-line fitting were proposed. These approaches use iterative optimization with a loss function to gradually obtain dewarping results. However, they are time-consuming and therefore unsuitable for real-time applications.
 
 ![语言学页面校正流程信息图](/images/blog/20261120/语言学页面校正流程信息图.jpg "语言学页面校正流程信息图")
 
-<sub>                      </sub>           <sup>Optimized Text-Line-Based Coordinate Transformation Method</sup>
+<sub>                      </sub>                   <sup>Optimized Text-Line-Based Coordinate Transformation Method</sup>
 
-Since 2019, learning-based approaches have gained increasing popularity, driven by the availability of large datasets.
+Since 2019, learning-based approaches have become increasingly popular, driven by the availability of large datasets.
 
-Data-driven displacement field learning is a method that uses deep learning to learn displacement fields directly from data. Its core principle is to use neural networks to model and predict displacement fields, enabling high-precision estimation of object deformation.
+Data-driven displacement-field learning uses deep learning to estimate displacement fields directly from data. Its core principle is to use neural networks to model and predict displacement fields, enabling high-accuracy estimation of document deformation.
 
 ![5-2_english](/images/blog/20261120/5-2_english.png "5-2_english")
 
@@ -71,7 +71,7 @@ Das et al. [2] were the first to introduce convolutional neural networks (CNNs) 
 
 Ma et al. [4] proposed a stacked U-Net architecture trained to predict the forward mapping of warped documents in an end-to-end manner.
 
-Das et al. [1] observed that document dewarping models do not always perform well when trained exclusively on synthetic datasets containing only 2D deformations. To address this limitation, they created the Doc3D dataset, which contains various types of pixel-level displacement fields for document images and incorporates both real-world documents and rendering software.
+Das et al. [1] observed that document dewarping models do not always perform well when trained exclusively on synthetic datasets containing only 2D deformations. To address this limitation, they created the Doc3D dataset, which contains various types of pixel-level displacement fields for document images and combines real-world document images with rendered images.
 
 Feng et al. [3] adopted Transformer [5] as their network architecture, achieving further performance improvements. However, these approaches still have limitations in terms of dewarping performance in real-world applications.
 
@@ -85,7 +85,13 @@ A simple analogy helps illustrate this concept: the shortest path between two lo
 
 The velocity field estimation can be formulated as the following optimization problem, where L represents the regularization term applied to the velocity field:
 
-![image-61](/images/blog/20261120/image-61.jpg "image-61")
+<img
+  src="/images/blog/20261120/image-61.jpg"
+  alt="image-61"
+  title="image-61"
+  className="mx-auto"
+  style={{ width:"65%" }}
+/>
 
 Spatial Transformer Networks were initially introduced for relatively simple transformations, such as affine transformations. Later, the adoption of sampling grids made these networks considerably more powerful.
 
@@ -93,7 +99,7 @@ For a two-dimensional image with dimensions [W, H], the corresponding displaceme
 
 Based on the displacement field, the Spatial Transformer Network generates a normalized sampling grid and then uses this grid to sample the image, producing the corrected result.
 
-Intsig's image correction solution can process complex document images, helping improve OCR performance and enhance intelligent image processing. Its document dewarping algorithms support end-to-end optimization and real-time processing across a wide range of scenarios. Advances in data resources and computational capabilities provide a foundation for algorithm optimization, enabling higher correction accuracy and more stable performance in complex scenarios. These capabilities provide reliable visual support for AI automation and intelligent systems.
+INTSIG's image correction solution can process complex document images, helping improve OCR performance and enhance intelligent image processing. Its document dewarping algorithms support end-to-end optimization and real-time processing across a wide range of scenarios. Advances in data resources and computational capabilities provide a foundation for algorithm optimization, enabling higher correction accuracy and more stable performance in complex scenarios. These capabilities provide reliable image-preprocessing support for AI automation and intelligent systems.
 
 **References**
 
