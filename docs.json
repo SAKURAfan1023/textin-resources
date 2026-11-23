@@ -27,7 +27,7 @@
           "news/ragflow-x-textin-integration-2-0-high-quality-pdf-parsing-and-flexible-parser-switching",
           "news/textin-xparse-is-now-available-on-deepseek-harness",
           "news/100-pages-in-2-seconds-why-document-parsing-speed-matters",
-          "news/document-digitization-and-intelligent-processing-an-overview-of-document-image-dewarping-technology"
+          "news/document-image-dewarping-why-it-matters-for-digitization-and-intelligent-processing"
         ]
       },
       {
@@ -286,7 +286,12 @@
     },
     {
       "source": "/untitled-page",
-      "destination": "/news/document-digitization-and-intelligent-processing-an-overview-of-document-image-dewarping-technology",
+      "destination": "/news/document-image-dewarping-why-it-matters-for-digitization-and-intelligent-processing",
+      "permanent": true
+    },
+    {
+      "source": "/news/document-digitization-and-intelligent-processing-an-overview-of-document-image-dewarping-technology",
+      "destination": "/news/document-image-dewarping-why-it-matters-for-digitization-and-intelligent-processing",
       "permanent": true
     },
     {
