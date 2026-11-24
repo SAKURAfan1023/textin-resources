@@ -736,31 +736,31 @@ test('multiple industries stay separate in cards, article metadata and the globa
   const { directory, catalog, save, article } = await fixture(t);
   await buildContent(directory);
   const news = await read(directory, 'news/list.mdx');
-  for (let index = 1; index <= 6; index++) {
+  for (let index = 1; index <= 7; index++) {
     const page = `cases/customer-${index}`;
     await writeFile(path.join(directory, `${page}.mdx`), article);
-    catalog.cases.push({ page, date: '2026-10-23', industry: index === 6 ? ['Automotive', 'Manufacturing'] : 'Manufacturing', scenarios: ['Accounts payable automation'], product: 'DocFlow', cover: '/images/cover.webp', customer: `Customer ${index}`, metric: { value: '60%', label: 'improvement' } });
+    catalog.cases.push({ page, date: '2026-10-23', industry: index === 7 ? ['Automotive', 'Manufacturing'] : 'Manufacturing', scenarios: ['Accounts payable automation'], product: 'DocFlow', cover: '/images/cover.webp', customer: `Customer ${index}`, metric: { value: '60%', label: 'improvement' } });
   }
   await save();
   await buildContent(directory);
   const first = await read(directory, 'cases/list.mdx');
   const second = await read(directory, 'cases/list/2.mdx');
   const entries = JSON.parse(first.match(/data-catalog-index="([^"]*)"/)[1].replaceAll('&quot;', '"').replaceAll('&#123;', '{').replaceAll('&#125;', '}'));
-  assert.deepEqual(entries[5].category, ['Automotive', 'Manufacturing']);
-  assert.equal(entries.filter(item => [item.category].flat().includes('Manufacturing')).length, 6);
+  assert.deepEqual(entries[6].category, ['Automotive', 'Manufacturing']);
+  assert.equal(entries.filter(item => [item.category].flat().includes('Manufacturing')).length, 7);
   assert.equal(entries.filter(item => [item.category].flat().includes('Automotive')).length, 1);
   assert.match(second, /<span className="content-industries"><span>Automotive<\/span><span>Manufacturing<\/span><\/span>/);
-  assert.match(await read(directory, 'cases/customer-6.mdx'), /Automotive · Manufacturing · DocFlow · Oct 23, 2026/);
+  assert.match(await read(directory, 'cases/customer-7.mdx'), /Automotive · Manufacturing · DocFlow · Oct 23, 2026/);
   assert.equal(await read(directory, 'news/list.mdx'), news);
   for (const industry of [[], ['Automotive', 'Automotive'], [' ']]) {
-    catalog.cases[5].industry = industry;
+    catalog.cases[6].industry = industry;
     await save();
     await assert.rejects(buildContent(directory), /cases\/.*\.mdx: listing/);
     assert.equal(await read(directory, 'cases/list/2.mdx'), second);
   }
 });
 
-test('case pages contain at most five cards and remove obsolete pages without changing news', async t => {
+test('regular case pages contain at most six cards and remove obsolete pages without changing news', async t => {
   const { directory, catalog, save, article } = await fixture(t);
   await buildContent(directory);
   const news = await read(directory, 'news/list.mdx');
@@ -775,17 +775,17 @@ test('case pages contain at most five cards and remove obsolete pages without ch
   const first = await read(directory, 'cases/list.mdx');
   const second = await read(directory, 'cases/list/2.mdx');
   const third = await read(directory, 'cases/list/3.mdx');
-  assert.equal((first.match(/data-content-page=/g) || []).length, 5);
-  assert.equal((second.match(/data-content-page=/g) || []).length, 5);
-  assert.equal((third.match(/data-content-page=/g) || []).length, 5);
-  assert.match(first, /data-content-page="cases\/customer-5"/);
-  assert.doesNotMatch(first, /data-content-page="cases\/customer-6"/);
-  assert.match(second, /data-content-page="cases\/customer-6"/);
-  assert.doesNotMatch(second, /data-content-page="cases\/customer-5"/);
+  assert.equal((first.match(/data-content-page=/g) || []).length, 6);
+  assert.equal((second.match(/data-content-page=/g) || []).length, 6);
+  assert.equal((third.match(/data-content-page=/g) || []).length, 3);
+  assert.match(first, /data-content-page="cases\/customer-6"/);
+  assert.doesNotMatch(first, /data-content-page="cases\/customer-7"/);
+  assert.match(second, /data-content-page="cases\/customer-7"/);
+  assert.doesNotMatch(second, /data-content-page="cases\/customer-6"/);
   assert.match(third, /data-content-page="cases\/customer-15"/);
   assert.match(second, /data-initial-page="2"/);
-  assert.match(second, /6–10 of 15/);
-  assert.match(third, /11–15 of 15/);
+  assert.match(second, /7–12 of 15/);
+  assert.match(third, /13–15 of 15/);
   assert.match(first, /Customer 15 story/); // Global search index includes unloaded stories.
   assert.doesNotMatch(first.match(/data-catalog-index="([^"]*)"/)[1], /cover\.webp/);
   assert.ok(JSON.parse(await read(directory, 'docs.json')).navigation.groups[0].pages.includes('cases/list/2'));
@@ -803,38 +803,38 @@ test('case pages contain at most five cards and remove obsolete pages without ch
   assert.deepEqual((await buildContent(directory, { check: true })).changed, []);
 });
 
-test('blog paginates at five articles, keeps a global index and cleans up reduced page counts', async t => {
+test('regular blog paginates at six articles, keeps a global index and cleans up reduced page counts', async t => {
   const { directory, catalog, save, article } = await fixture(t);
   await buildContent(directory);
   const cases = await read(directory, 'cases/list.mdx');
   const items = [];
-  for (let index = 1; index <= 11; index++) {
+  for (let index = 1; index <= 13; index++) {
     const page = `news/article-${index}`;
     await writeFile(path.join(directory, `${page}.mdx`), article.replace('A new article', `Blog article ${index}`));
-    items.push({ page, date: '2026-10-23', category: index > 5 ? 'Announcements' : 'Technical', product: 'xParse', cover: '/images/cover.webp', readMinutes: 4 });
+    items.push({ page, date: '2026-10-23', category: index > 6 ? 'Announcements' : 'Technical', product: 'xParse', cover: '/images/cover.webp', readMinutes: 4 });
   }
-  for (const count of [5, 6, 11]) {
+  for (const count of [6, 7, 13]) {
     catalog.news = items.slice(0, count);
     await save();
     await buildContent(directory);
     const first = await read(directory, 'news/list.mdx');
-    assert.equal((first.match(/data-content-page=/g) || []).length, 5);
-    assert.doesNotMatch(first, /data-content-page="news\/article-6"/);
+    assert.equal((first.match(/data-content-page=/g) || []).length, 6);
+    assert.doesNotMatch(first, /data-content-page="news\/article-7"/);
     assert.match(first, /aria-label="Blog pagination"/);
-    assert.equal(/data-catalog-pagination hidden/.test(first), count === 5);
+    assert.equal(/data-catalog-pagination hidden/.test(first), count === 6);
     const index = first.match(/data-catalog-index="([^"]*)"/)[1];
     assert.match(index, new RegExp(`Blog article ${count}`));
     assert.doesNotMatch(index, /cover\.webp/);
     const pages = JSON.parse(await read(directory, 'docs.json')).navigation.groups[0].pages;
-    assert.equal(pages.includes('news/list/2'), count > 5);
-    if (count > 5) {
+    assert.equal(pages.includes('news/list/2'), count > 6);
+    if (count > 6) {
       const second = await read(directory, 'news/list/2.mdx');
-      assert.equal((second.match(/data-content-page=/g) || []).length, Math.min(count - 5, 5));
-      assert.match(second, /data-content-page="news\/article-6"/);
+      assert.equal((second.match(/data-content-page=/g) || []).length, Math.min(count - 6, 6));
+      assert.match(second, /data-content-page="news\/article-7"/);
       assert.doesNotMatch(second, /data-content-page="news\/article-1"/);
       assert.match(first, /Announcements/); // An unloaded page contributes its category to global filters.
     }
-    if (count === 11) assert.equal((await read(directory, 'news/list/3.mdx')).match(/data-content-page=/g).length, 1);
+    if (count === 13) assert.equal((await read(directory, 'news/list/3.mdx')).match(/data-content-page=/g).length, 1);
     assert.equal(await read(directory, 'cases/list.mdx'), cases);
     assert.match(await read(directory, 'news/article-1.mdx'), /Keep this body unchanged\./);
     assert.deepEqual((await buildContent(directory, { check: true })).changed, []);
@@ -852,4 +852,38 @@ test('blog paginates at five articles, keeps a global index and cleans up reduce
   assert.match(await read(directory, 'news/list.mdx'), /data-page-range>0–0 of 0/);
   assert.equal((await read(directory, 'news/list.mdx')).match(/data-content-page=/g), null);
   assert.deepEqual((await buildContent(directory, { check: true })).changed, []);
+});
+
+test('featured cards consume two slots only on their own page and keep fetch chunks accurate', async t => {
+  for (const kind of ['news', 'cases']) {
+    const { directory, catalog, save, article } = await fixture(t);
+    const items = [];
+    for (let number = 1; number <= 13; number++) {
+      const page = `${kind}/entry-${number}`;
+      await writeFile(path.join(directory, `${page}.mdx`), article.replace('A new article', `Entry ${number}`));
+      items.push(kind === 'news'
+        ? { page, date: '2026-10-23', category: 'Technical', product: 'xParse', cover: '/images/cover.webp', readMinutes: 4 }
+        : { page, date: '2026-10-23', industry: 'Manufacturing', scenarios: ['Document structuring'], product: 'xParse', cover: '/images/cover.webp', customer: `Customer ${number}`, metric: { value: '60%', label: 'improvement' } });
+    }
+    for (const featuredIndex of [0, 6]) {
+      catalog[kind] = items.map((item, index) => ({ ...item, featured: index === featuredIndex }));
+      await save();
+      await buildContent(directory);
+      const sizes = featuredIndex === 0 ? [5, 6, 2] : [6, 5, 2];
+      let start = 0;
+      for (let page = 1; page <= sizes.length; page++) {
+        const source = await read(directory, `${kind}/list${page === 1 ? '' : `/${page}`}.mdx`);
+        const cards = [...source.matchAll(/data-content-page="([^"]+)"/g)].map(match => match[1]);
+        assert.deepEqual(cards, items.slice(start, start + sizes[page - 1]).map(item => item.page));
+        assert.ok(source.includes(`${start + 1}–${start + cards.length} of 13`));
+        const encoded = source.match(/data-catalog-index="([^"]*)"/)[1];
+        const entries = JSON.parse(encoded.replaceAll('&quot;', '"').replaceAll('&#123;', '{').replaceAll('&#125;', '}').replaceAll('&amp;', '&'));
+        assert.deepEqual(entries.filter(entry => entry.chunk === page).map(entry => entry.page), cards);
+        assert.equal(entries.find(entry => entry.featured).page, items[featuredIndex].page);
+        start += cards.length;
+      }
+      assert.equal(start, 13);
+      assert.deepEqual((await buildContent(directory, { check: true })).changed, []);
+    }
+  }
 });

@@ -8,7 +8,18 @@ import addFormats from 'ajv-formats';
 import { parseDocument } from 'yaml';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const pageSize = 5;
+const pageSize = 6;
+function catalogPages(items, showFeatured = true) {
+  const pages = [[]];
+  let used = 0;
+  for (const item of items) {
+    const slots = showFeatured && item.featured ? 2 : 1;
+    if (used + slots > pageSize) { pages.push([]); used = 0; }
+    pages.at(-1).push(item);
+    used += slots;
+  }
+  return pages;
+}
 const listPath = (kind, page) => `/${kind}/list${page === 1 ? '' : `/${page}`}`;
 const metadataStart = '{/* content:metadata:start */}';
 const metadataEnd = '{/* content:metadata:end */}';
@@ -64,10 +75,12 @@ function renderCard(article, home = false) {
 </div>`;
 }
 
-function pagination(kind, page, total) {
-  const pages = Math.max(1, Math.ceil(total / pageSize));
+function pagination(kind, page, chunks) {
+  const pages = chunks.length;
+  const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+  const start = chunks.slice(0, page - 1).reduce((sum, chunk) => sum + chunk.length, 0);
   const link = (label, target, key) => `<a href="${listPath(kind, Math.max(1, Math.min(pages, target)))}#catalog" data-catalog-page="${key}"${target < 1 || target > pages ? ' aria-disabled="true" tabIndex="-1"' : ''}${key === String(page) ? ' aria-current="page"' : ''}>${label}</a>`;
-  return `<div role="navigation" className="catalog-pagination" aria-label="${kind === 'news' ? 'Blog' : 'Case Studies'} pagination" data-catalog-pagination${pages === 1 ? ' hidden' : ''}><p data-page-range>${total ? (page - 1) * pageSize + 1 : 0}–${Math.min(page * pageSize, total)} of ${total}</p><div>${link('Previous', page - 1, 'previous')}${Array.from({ length: pages }, (_, index) => link(String(index + 1), index + 1, String(index + 1))).join('')}${link('Next', page + 1, 'next')}</div></div>`;
+  return `<div role="navigation" className="catalog-pagination" aria-label="${kind === 'news' ? 'Blog' : 'Case Studies'} pagination" data-catalog-pagination${pages === 1 ? ' hidden' : ''}><p data-page-range>${total ? start + 1 : 0}–${start + chunks[page - 1].length} of ${total}</p><div>${link('Previous', page - 1, 'previous')}${Array.from({ length: pages }, (_, index) => link(String(index + 1), index + 1, String(index + 1))).join('')}${link('Next', page + 1, 'next')}</div></div>`;
 }
 
 async function readArticle(directory, file, siteUrl, validate, sourceFile = file) {
@@ -227,18 +240,22 @@ export async function buildContent(directory = root, { check = false } = {}) {
   for (const kind of ['news', 'cases']) {
     const template = await read(`templates/${kind}-list.mdx`);
     if (!template.includes('{{CARDS}}') || !template.includes('{{COUNT}}')) throw new Error(`templates/${kind}-list.mdx: missing CARDS or COUNT placeholder.`);
-    const entries = articles[kind].map(({ item, title, description }, index) => ({
+    const entries = articles[kind].map(({ item, title, description }) => ({
       page: item.page, category: item.category || item.industry, products: productNames(item), scenarios: item.scenarios || [], date: item.date,
       search: [item.customer, ...categoryNames(item), title, description, item.metric?.value, item.metric?.label, ...productNames(item), ...(item.scenarios || []), kind === 'news' ? `${item.readMinutes} min read` : ''].filter(value => value !== undefined && value !== '').join(' '),
-      chunk: Math.floor(index / pageSize) + 1
+      featured: Boolean(item.featured)
     }));
-    for (let page = 1; page <= Math.max(1, Math.ceil(entries.length / pageSize)); page++) {
+    const chunks = catalogPages(entries);
+    chunks.forEach((chunk, index) => chunk.forEach(item => { item.chunk = index + 1; }));
+    let start = 0;
+    for (let page = 1; page <= chunks.length; page++) {
       const file = page === 1 ? `${kind}/list.mdx` : `${kind}/list/${page}.mdx`;
-      const source = template.replace('{{CARDS}}', articles[kind].slice((page - 1) * pageSize, page * pageSize).map(article => renderCard(article)).join('\n\n'))
+      const source = template.replace('{{CARDS}}', articles[kind].slice(start, start + chunks[page - 1].length).map(article => renderCard(article)).join('\n\n'))
         .replace('{{COUNT}} articles', `${entries.length} ${entries.length === 1 ? 'article' : 'articles'}`).replace('{{COUNT}} case studies', `${entries.length} ${entries.length === 1 ? 'case study' : 'case studies'}`)
         .replaceAll('{{COUNT}}', String(entries.length)).replace('{{INDEX}}', escape(JSON.stringify(entries)))
-        .replace('{{PAGE_SIZE}}', String(pageSize)).replace('{{PAGE}}', String(page)).replace('{{PAGINATION}}', pagination(kind, page, entries.length));
+        .replace('{{PAGE_SIZE}}', String(pageSize)).replace('{{PAGE}}', String(page)).replace('{{PAGINATION}}', pagination(kind, page, chunks));
       output.set(file, source);
+      start += chunks[page - 1].length;
     }
     for (const article of articles[kind]) output.set(article.file, rewriteArticleLinks(article.source, pathRenames, settings.siteUrl));
   }

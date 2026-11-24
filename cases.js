@@ -338,6 +338,17 @@
     })().catch(error => { chunkLoads.delete(chunk); throw error; }));
     return chunkLoads.get(chunk);
   }
+  function catalogPages(items, pageSize, showFeatured) {
+    const pages = [[]];
+    let used = 0;
+    for (const item of items) {
+      const slots = showFeatured && item.featured ? 2 : 1;
+      if (used + slots > pageSize) { pages.push([]); used = 0; }
+      pages.at(-1).push(item);
+      used += slots;
+    }
+    return pages;
+  }
   async function filterCatalog(updateUrl, page) {
     const section = catalog;
     const request = ++revision;
@@ -348,9 +359,12 @@
       && (!current.q || normalize(item.search).includes(normalize(current.q))));
     if (current.sort !== 'recommended') filtered.sort((a, b) => (current.sort === 'oldest' ? 1 : -1) * a.date.localeCompare(b.date));
     const pageSize = Number(section.dataset.pageSize);
-    const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+    const isFiltered = Boolean(current[section.dataset.filterKey] || current.scenario || current.product || current.q || current.sort !== 'recommended');
+    const chunks = catalogPages(filtered, pageSize, !isFiltered);
+    const pages = chunks.length;
     currentPage = Math.max(1, Math.min(pages, page));
-    const selected = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+    const selected = chunks[currentPage - 1];
+    const start = chunks.slice(0, currentPage - 1).reduce((sum, chunk) => sum + chunk.length, 0);
     const url = new URL(location.href);
     url.pathname = listPath(section.dataset.kind, currentPage);
     for (const [key, value] of Object.entries(current)) {
@@ -358,13 +372,13 @@
       else url.searchParams.delete(key);
     }
     if (updateUrl || url.pathname !== location.pathname) history.replaceState(history.state, '', url.pathname + url.search + url.hash);
-    section.dataset.filtered = String(Boolean(current[section.dataset.filterKey] || current.scenario || current.product || current.q || current.sort !== 'recommended'));
+    section.dataset.filtered = String(isFiltered);
     const noun = section.dataset.kind === 'cases' ? (filtered.length === 1 ? 'case study' : 'case studies') : (filtered.length === 1 ? 'article' : 'articles');
     section.querySelector('[data-result-count]').textContent = `${filtered.length} ${noun}`;
     section.querySelector('[data-content-empty]').hidden = filtered.length !== 0;
     const pagination = section.querySelector('[data-catalog-pagination]');
     pagination.hidden = pages <= 1;
-    pagination.querySelector('[data-page-range]').textContent = `${filtered.length ? (currentPage - 1) * pageSize + 1 : 0}–${Math.min(currentPage * pageSize, filtered.length)} of ${filtered.length}`;
+    pagination.querySelector('[data-page-range]').textContent = `${filtered.length ? start + 1 : 0}–${start + selected.length} of ${filtered.length}`;
     pagination.querySelectorAll('[data-catalog-page]').forEach(link => {
       const kind = link.dataset.catalogPage;
       const target = kind === 'previous' ? currentPage - 1 : kind === 'next' ? currentPage + 1 : Number(kind);

@@ -15,8 +15,7 @@
         "pages": [
           "index",
           "news/list",
-          "cases/list",
-          "news/list/2"
+          "cases/list"
         ]
       },
       {
